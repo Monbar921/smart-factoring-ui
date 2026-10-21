@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Factoring</title>
+    <!-- тёмная тема по настройке системы: класс ставится до первой отрисовки, без мигания светлым фоном -->
+    <script>
+      (() => {
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const apply = () => document.documentElement.classList.toggle('dark', media.matches);
+        apply();
+        media.addEventListener('change', apply);
+      })();
+    </script>
+    <!-- настройки стенда (адрес Keycloak, realm, клиент): в образе файл пишется при старте контейнера -->
+    <script src="/config.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

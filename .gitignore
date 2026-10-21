@@ -1,6 +1,11 @@
 .env
+.env.local
 .idea/
 *.iml
-
-
 test.env
+
+node_modules
+dist
+coverage
+.vite
+*.log

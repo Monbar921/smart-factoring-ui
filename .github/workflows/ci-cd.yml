@@ -1,0 +1,167 @@
+name: CI/CD
+
+# Логика по событиям (как у smart-factoring-backend):
+#   pull request в main/test -> формат, линтер, тесты и сборка
+#   push в main/test         -> + образ в ghcr.io (теги: <short sha>, <ветка>, для main ещё latest)
+#                               + repository_dispatch в deploy-репозиторий, который раскатывает образ на VDS
+#                                 (ветка передаётся в payload, по ней deploy-репозиторий выбирает окружение)
+#
+# Настройки репозитория (Settings -> Secrets and variables -> Actions):
+#   vars.DEPLOY_REPO     - deploy-репозиторий, owner/name
+#   secrets.DEPLOY_TOKEN - fine-grained PAT с доступом только к DEPLOY_REPO, Contents: Read and write
+on:
+  push:
+    branches: ['main', 'test']
+  pull_request:
+    branches: ['main', 'test']
+  workflow_dispatch:
+
+# новый push в ту же ветку/PR отменяет незавершённую сборку предыдущего
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+  NODE_VERSION: '24'
+
+jobs:
+  build:
+    name: Lint, test & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      # tsc -b + vite build -> dist/
+      - name: Build
+        run: npm run build
+
+      - name: Upload dist
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 3
+
+  image:
+    name: Build & push image
+    needs: build
+    if: >-
+      github.event_name != 'pull_request' &&
+      contains(fromJSON('["refs/heads/main", "refs/heads/test"]'), github.ref)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.name.outputs.name }}
+      tag: ${{ steps.name.outputs.tag }}
+      digest: ${{ steps.push.outputs.digest }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download dist
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist
+
+      # ghcr.io принимает имена только в нижнем регистре
+      - name: Image name and tag
+        id: name
+        run: |
+          echo "name=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "tag=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.name.outputs.name }}
+          tags: |
+            type=raw,value=${{ steps.name.outputs.tag }}
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Trigger deploy
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # GITHUB_TOKEN не даёт прав на другие репозитории, поэтому отдельный DEPLOY_TOKEN.
+      # Передаём неизменяемый тег (sha) и digest, а не latest: на VDS едет ровно проверенная сборка,
+      # откат - повторный dispatch со старым тегом
+      - name: Dispatch to deploy repository
+        env:
+          GH_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          DEPLOY_REPO: ${{ vars.DEPLOY_REPO }}
+          IMAGE: ${{ needs.image.outputs.image }}
+          TAG: ${{ needs.image.outputs.tag }}
+          DIGEST: ${{ needs.image.outputs.digest }}
+        run: |
+          if [ -z "$DEPLOY_REPO" ] || [ -z "$GH_TOKEN" ]; then
+            echo "::error::Не заданы vars.DEPLOY_REPO и/или secrets.DEPLOY_TOKEN"
+            exit 1
+          fi
+          jq -n \
+            --arg service "${GITHUB_REPOSITORY#*/}" \
+            --arg image "$IMAGE" \
+            --arg tag "$TAG" \
+            --arg digest "$DIGEST" \
+            --arg sha "$GITHUB_SHA" \
+            --arg branch "$GITHUB_REF_NAME" \
+            '{event_type: "deploy", client_payload: {service: $service, branch: $branch, image: $image, tag: $tag, digest: $digest, sha: $sha}}' \
+          | gh api "repos/${DEPLOY_REPO}/dispatches" --input -
+          echo "Dispatched ${IMAGE}:${TAG} (${GITHUB_REF_NAME}) to ${DEPLOY_REPO}" >> "$GITHUB_STEP_SUMMARY"

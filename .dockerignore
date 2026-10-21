@@ -1,0 +1,4 @@
+# в образ попадают только dist/ и docker/
+*
+!dist/
+!docker/

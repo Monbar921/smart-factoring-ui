@@ -1,0 +1,54 @@
+# Шаблон: при старте контейнера envsubst подставляет ${SERVER_PORT} и ${GATEWAY_URI} (NGINX_ENVSUBST_FILTER в Dockerfile)
+server {
+    listen ${SERVER_PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+
+    server_tokens off;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    # healthcheck docker, в access log не пишется
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "UP";
+    }
+
+    # API - в gateway стенда. Адрес через переменную и resolver docker: nginx стартует, даже если gateway ещё нет,
+    # и находит его заново после пересоздания контейнера. Путь запроса передаётся как есть: /api/backend/...
+    location /api/ {
+        resolver 127.0.0.11 valid=10s ipv6=off;
+        set $gateway ${GATEWAY_URI};
+        proxy_pass $gateway;
+        proxy_http_version 1.1;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_read_timeout 60s;
+    }
+
+    # файлы сборки с хешем в имени - кэшируются навсегда
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable" always;
+        add_header X-Content-Type-Options nosniff always;
+        try_files $uri =404;
+    }
+
+    # настройки стенда и точка входа - без кэша: после деплоя браузер сразу берёт новые
+    location = /config.js {
+        add_header Cache-Control "no-store" always;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    # SPA: любой путь, кроме файлов, отдаёт index.html
+    location / {
+        add_header Cache-Control "no-cache" always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options DENY always;
+        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        try_files $uri /index.html;
+    }
+}
