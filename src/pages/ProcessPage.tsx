@@ -8,8 +8,11 @@ import { RunLog } from '@/features/process/RunLog';
 import { RunSteps } from '@/features/process/RunSteps';
 import { UpdTable } from '@/features/process/UpdTable';
 
-/** Экран процесса (ЭП-1…ЭП-6, ЭП-8, ЭП-9): запуск, ход и результаты прогона по шагам */
-export function ProcessPage() {
+/**
+ * Экран процесса (ЭП-1…ЭП-6, ЭП-8, ЭП-9): запуск, ход и результаты прогона по шагам.
+ * canOperate - роль operator: запуск прогона и импорт демо-данных; без неё - только просмотр.
+ */
+export function ProcessPage({ canOperate = true }: { canOperate?: boolean }) {
   const runs = useRuns();
   const [selectedRunId, setRunId] = useState<number | null>(null);
   const [filter, setFilter] = useState<UpdFilter>({ page: 0 });
@@ -26,12 +29,16 @@ export function ProcessPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
       <aside className="flex flex-col gap-6">
-        <LaunchCard onStarted={select} />
+        {canOperate && <LaunchCard onStarted={select} />}
         <RunHistory selectedId={runId} onSelect={select} />
-        <DemoImportCard />
+        {canOperate && <DemoImportCard />}
       </aside>
       <div className="flex min-w-0 flex-col gap-6">
-        {runId === null && <p className="text-muted-foreground">Запустите прогон или выберите его в истории.</p>}
+        {runId === null && (
+          <p className="text-muted-foreground">
+            {canOperate ? 'Запустите прогон или выберите его в истории.' : 'Выберите прогон в истории.'}
+          </p>
+        )}
         {runId !== null && run.isPending && <Skeleton className="h-64 w-full" />}
         {run.data && (
           <>
