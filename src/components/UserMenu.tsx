@@ -1,4 +1,5 @@
-import { LogOut } from 'lucide-react';
+import { LogOut, Moon, Sun } from 'lucide-react';
+import { useState } from 'react';
 import { useAuth } from 'react-oidc-context';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,17 @@ import {
 
 export function UserMenu() {
   const auth = useAuth();
+  const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
+  const toggleTheme = () => {
+    const next = !dark;
+    document.documentElement.classList.toggle('dark', next);
+    try {
+      localStorage.setItem('theme', next ? 'dark' : 'light');
+    } catch {
+      // хранилище недоступно - тема только до перезагрузки
+    }
+    setDark(next);
+  };
   const profile = auth.user?.profile;
   const name = profile?.name || profile?.preferred_username || 'Пользователь';
   const initials = name
@@ -38,6 +50,10 @@ export function UserMenu() {
           {profile?.email && <span className="block truncate text-xs font-normal text-muted-foreground">{profile.email}</span>}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={toggleTheme}>
+          {dark ? <Sun /> : <Moon />}
+          {dark ? 'Светлая тема' : 'Тёмная тема'}
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => void auth.signoutRedirect()}>
           <LogOut />
           Выйти

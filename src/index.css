@@ -4,31 +4,32 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Палитра shadcn/ui под банковскую тематику: глубокий синий как основной цвет,
- * изумрудный - для денежных и успешных состояний (--success), нейтральный холодный серый для фона
+ * Светлая палитра по макету экрана процесса (рис. 4 BRD): синий #2f6db5 - основной (кнопки, полосы воронки),
+ * тёмно-синий - заголовки и текст, зелёный - готово и деньги (--success), голубой фон шапки и блоков шагов
  */
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.985 0.004 250);
-  --foreground: oklch(0.21 0.03 260);
+  --radius: 0.625rem;
+  --background: oklch(0.975 0.006 250);
+  --foreground: oklch(0.29 0.06 258);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.03 260);
+  --card-foreground: oklch(0.29 0.06 258);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.03 260);
-  --primary: oklch(0.36 0.12 262);
-  --primary-foreground: oklch(0.98 0.01 250);
-  --secondary: oklch(0.955 0.01 255);
-  --secondary-foreground: oklch(0.28 0.06 262);
-  --muted: oklch(0.955 0.008 255);
-  --muted-foreground: oklch(0.5 0.025 258);
+  --popover-foreground: oklch(0.29 0.06 258);
+  --primary: oklch(0.52 0.13 255);
+  --primary-foreground: oklch(0.99 0.005 250);
+  --secondary: oklch(0.94 0.02 250);
+  --secondary-foreground: oklch(0.32 0.08 258);
+  --muted: oklch(0.965 0.012 250);
+  --muted-foreground: oklch(0.52 0.03 255);
   --accent: oklch(0.94 0.03 165);
   --accent-foreground: oklch(0.32 0.08 165);
-  --destructive: oklch(0.58 0.22 27);
-  --success: oklch(0.6 0.13 162);
+  --destructive: oklch(0.56 0.2 27);
+  --success: oklch(0.55 0.12 160);
   --success-foreground: oklch(0.98 0.02 165);
-  --border: oklch(0.91 0.01 255);
-  --input: oklch(0.91 0.01 255);
-  --ring: oklch(0.55 0.12 262);
+  --border: oklch(0.86 0.025 252);
+  --input: oklch(0.86 0.025 252);
+  --ring: oklch(0.52 0.13 255);
+  --header: oklch(0.93 0.025 250);
 }
 
 .dark {
@@ -52,6 +53,7 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.6 0.1 258);
+  --header: oklch(0.21 0.03 262);
 }
 
 @theme inline {
@@ -80,6 +82,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-header: var(--header);
 }
 
 @layer base {

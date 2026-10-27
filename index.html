@@ -5,13 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Smart Factoring</title>
-    <!-- тёмная тема по настройке системы: класс ставится до первой отрисовки, без мигания светлым фоном -->
+    <!-- светлая тема по умолчанию, как на макете рис. 4 BRD; тёмная - только по выбору в меню пользователя (localStorage).
+         Класс ставится до первой отрисовки, без мигания -->
     <script>
       (() => {
-        const media = window.matchMedia('(prefers-color-scheme: dark)');
-        const apply = () => document.documentElement.classList.toggle('dark', media.matches);
-        apply();
-        media.addEventListener('change', apply);
+        try {
+          document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark');
+        } catch {
+          // хранилище недоступно - светлая тема
+        }
       })();
     </script>
     <!-- настройки стенда (адрес Keycloak, realm, клиент): в образе файл пишется при старте контейнера -->

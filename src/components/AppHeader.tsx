@@ -18,10 +18,10 @@ const TITLES: Record<Route, string> = {
 /** Шапка и вкладки разделов, как на макете экрана процесса (рис. 4 BRD) */
 export function AppHeader({ route, sections }: { route?: Route; sections: Route[] }) {
   return (
-    <header className="sticky top-0 z-10 border-b bg-background/90 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b bg-header/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-[96rem] items-center gap-4 px-4 sm:px-6">
         <Logo />
-        {route && <span className="hidden text-lg font-semibold text-muted-foreground sm:inline">· {TITLES[route]}</span>}
+        {route && <span className="hidden text-lg font-semibold sm:inline">· {TITLES[route]}</span>}
         <div className="ml-auto">
           <UserMenu />
         </div>
@@ -37,7 +37,7 @@ export function AppHeader({ route, sections }: { route?: Route; sections: Route[
                 'rounded-lg border px-5 py-2 text-sm font-medium transition-colors',
                 route === section.route
                   ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-primary/40 text-foreground hover:bg-muted',
+                  : 'border-primary/50 bg-card text-foreground hover:bg-muted',
               )}
             >
               {section.title}
