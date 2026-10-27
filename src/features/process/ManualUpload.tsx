@@ -1,6 +1,6 @@
 import { Database, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
-import { useImportDemo, useResetDemo } from '@/api/backend';
+import { useManualUpload, useResetManualUpload } from '@/api/backend';
 import type { ImportIssue, ImportResult } from '@/api/types';
 import { ErrorNote } from '@/components/StatusBadges';
 import { Button } from '@/components/ui/button';
@@ -38,8 +38,8 @@ const SHOWN_ISSUES = 50;
  * Загрузка выгрузки генератора или партии ML-команды (Р-52, Р-54): дельта - новое добавляется, изменённое обновляется, ничего не удаляется,
  * история прогонов и решения менеджеров сохраняются. Итог - отчёт импорта.
  */
-export function DemoImportCard() {
-  const importDemo = useImportDemo();
+export function ManualUploadCard() {
+  const upload = useManualUpload();
   const [path, setPath] = useState('');
 
   return (
@@ -47,7 +47,7 @@ export function DemoImportCard() {
       <CardHeader className="px-5">
         <CardTitle className="flex items-center gap-2 text-base">
           <Database className="size-4 text-muted-foreground" aria-hidden />
-          Загрузка данных
+          Ручная загрузка
         </CardTitle>
         <CardDescription>
           Выгрузка генератора, партия ML-команды (batch_NN) или весь их набор с index.json — формат определяется сам. Новые записи
@@ -63,27 +63,27 @@ export function DemoImportCard() {
             onChange={(event) => setPath(event.target.value)}
             aria-label="Папка выгрузки на сервере"
           />
-          <Button variant="outline" disabled={!path || importDemo.isPending} onClick={() => importDemo.mutate({ path })}>
+          <Button variant="outline" disabled={!path || upload.isPending} onClick={() => upload.mutate({ path })}>
             Импорт
           </Button>
         </div>
-        <label className={cn('flex cursor-pointer items-center gap-2 text-primary', importDemo.isPending && 'opacity-50')}>
+        <label className={cn('flex cursor-pointer items-center gap-2 text-primary', upload.isPending && 'opacity-50')}>
           <Upload className="size-4" aria-hidden />
-          <span>{importDemo.isPending ? 'Загрузка…' : 'ZIP-архив выгрузки'}</span>
+          <span>{upload.isPending ? 'Загрузка…' : 'ZIP-архив выгрузки'}</span>
           <input
             type="file"
             accept=".zip"
             className="sr-only"
-            disabled={importDemo.isPending}
+            disabled={upload.isPending}
             onChange={(event) => {
               const file = event.target.files?.[0];
-              if (file) importDemo.mutate({ file });
+              if (file) upload.mutate({ file });
               event.target.value = '';
             }}
           />
         </label>
-        <ErrorNote error={importDemo.error} />
-        {importDemo.isSuccess && <ImportReport result={importDemo.data} />}
+        <ErrorNote error={upload.error} />
+        {upload.isSuccess && <ImportReport result={upload.data} />}
       </CardContent>
     </Card>
   );
@@ -158,7 +158,7 @@ function ImportReport({ result }: { result: ImportResult }) {
           )}
           {totalIssues > result.issues.length && (
             <p className="text-xs text-muted-foreground">
-              Показаны первые {result.issues.length} из {totalIssues} замечаний; полный отчёт — в demo_import_batch.
+              Показаны первые {result.issues.length} из {totalIssues} замечаний; полный отчёт — в manual_upload_batch.
             </p>
           )}
         </>
@@ -167,9 +167,9 @@ function ImportReport({ result }: { result: ImportResult }) {
   );
 }
 
-/** Полная очистка: демо-данные, прогоны и решения менеджеров (параметры остаются) - отдельно от импорта */
-export function DemoResetCard() {
-  const reset = useResetDemo();
+/** Полная очистка: данные ручной загрузки, прогоны и решения менеджеров (параметры остаются) - отдельно от импорта */
+export function ManualUploadResetCard() {
+  const reset = useResetManualUpload();
   const [confirmed, setConfirmed] = useState(false);
 
   return (
@@ -180,7 +180,7 @@ export function DemoResetCard() {
           Очистка данных
         </CardTitle>
         <CardDescription>
-          Удаляет все загруженные данные, историю прогонов и решения менеджеров — чтобы начать демо с нуля.
+          Удаляет все загруженные данные, историю прогонов и решения менеджеров — чтобы начать с нуля.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 px-5 text-sm">

@@ -34,8 +34,8 @@ const RESULT: ImportResult = {
 function routes() {
   return {
     'GET /api/backend/runs': { items: [], page: 0, size: 50, total: 0 },
-    'POST /api/backend/demo/import': RESULT,
-    'DELETE /api/backend/demo/data': {},
+    'POST /api/backend/manual-upload': RESULT,
+    'DELETE /api/backend/manual-upload/data': {},
   };
 }
 
@@ -64,14 +64,14 @@ describe('HistoryPage', () => {
     await userEvent.click(button);
 
     expect(await screen.findByText('Данные очищены.')).toBeInTheDocument();
-    expect(calls.some((call) => call.method === 'DELETE' && call.url === '/api/backend/demo/data')).toBe(true);
+    expect(calls.some((call) => call.method === 'DELETE' && call.url === '/api/backend/manual-upload/data')).toBe(true);
   });
 
   it('без роли operator - только история', () => {
     mockApi(routes());
     renderWithQuery(<HistoryPage canOperate={false} />);
 
-    expect(screen.queryByText('Загрузка данных')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ручная загрузка')).not.toBeInTheDocument();
     expect(screen.queryByText('Очистка данных')).not.toBeInTheDocument();
   });
 });

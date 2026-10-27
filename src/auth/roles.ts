@@ -1,7 +1,7 @@
 import { useAuth } from 'react-oidc-context';
 
 export interface Roles {
-  /** экран процесса: импорт демо-данных и запуск прогона */
+  /** экран процесса: импорт данных ручной загрузки и запуск прогона */
   operator: boolean;
   /** эмулятор CRM: очередь, карточка клиента, решения по предложениям */
   manager: boolean;

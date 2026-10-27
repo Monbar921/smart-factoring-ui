@@ -29,8 +29,8 @@ server {
         proxy_read_timeout 60s;
     }
 
-    # импорт демо-данных: архив до 200 МБ (как лимит backend), набор партий ML-команды грузится около минуты и дольше
-    location /api/backend/demo/ {
+    # импорт данных ручной загрузки: архив до 200 МБ (как лимит backend), набор партий ML-команды грузится около минуты и дольше
+    location /api/backend/manual-upload {
         resolver 127.0.0.11 valid=10s ipv6=off;
         set $gateway ${GATEWAY_URI};
         proxy_pass $gateway;

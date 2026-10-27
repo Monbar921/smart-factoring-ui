@@ -125,29 +125,29 @@ export function useRunLog(runId: number | null, level: string, isRunning: boolea
   });
 }
 
-export function useImportDemo() {
+export function useManualUpload() {
   const token = useToken();
   const client = useQueryClient();
   return useMutation({
     mutationFn: async (source: { path: string } | { file: File }) => {
       if ('path' in source) {
-        return apiJson<ImportResult>(`${BASE}/demo/import`, token!, 'POST', { path: source.path });
+        return apiJson<ImportResult>(`${BASE}/manual-upload`, token!, 'POST', { path: source.path });
       }
       const form = new FormData();
       form.set('file', source.file);
-      const response = await apiFetch(`${BASE}/demo/import`, token!, { method: 'POST', body: form });
+      const response = await apiFetch(`${BASE}/manual-upload`, token!, { method: 'POST', body: form });
       return (await response.json()) as ImportResult;
     },
     onSuccess: () => client.invalidateQueries(),
   });
 }
 
-/** Полная очистка демо-данных и истории прогонов (импорт сам ничего не стирает) */
-export function useResetDemo() {
+/** Полная очистка данных ручной загрузки и истории прогонов (импорт сам ничего не стирает) */
+export function useResetManualUpload() {
   const token = useToken();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: () => apiFetch(`${BASE}/demo/data`, token!, { method: 'DELETE' }),
+    mutationFn: () => apiFetch(`${BASE}/manual-upload/data`, token!, { method: 'DELETE' }),
     onSuccess: () => client.invalidateQueries(),
   });
 }

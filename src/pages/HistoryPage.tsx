@@ -1,4 +1,4 @@
-import { DemoImportCard, DemoResetCard } from '@/features/process/DemoImport';
+import { ManualUploadCard, ManualUploadResetCard } from '@/features/process/ManualUpload';
 import { RunHistory } from '@/features/process/RunHistory';
 import { openRun } from '@/lib/useHashRoute';
 
@@ -12,8 +12,8 @@ export function HistoryPage({ canOperate }: { canOperate: boolean }) {
       <RunHistory onSelect={openRun} />
       {canOperate && (
         <aside className="flex flex-col gap-5">
-          <DemoImportCard />
-          <DemoResetCard />
+          <ManualUploadCard />
+          <ManualUploadResetCard />
         </aside>
       )}
     </div>
