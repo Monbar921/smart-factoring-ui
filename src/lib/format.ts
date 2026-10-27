@@ -42,6 +42,30 @@ export function duration(ms: number | null | undefined): string {
   return `${Math.floor(seconds / 60)} мин ${Math.round(seconds % 60)} с`;
 }
 
+/** Оценка оставшегося времени, округлённо: «~40 с», «~9 мин», «~1 ч 5 мин» */
+export function approxDuration(ms: number): string {
+  const seconds = Math.max(1, Math.round(ms / 1000));
+  if (seconds < 60) return `~${Math.max(5, Math.round(seconds / 5) * 5)} с`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `~${minutes} мин`;
+  return `~${Math.floor(minutes / 60)} ч ${minutes % 60} мин`;
+}
+
+/**
+ * Процент и оставшееся время долгой части шага (Р-57): скорость - сделанное с начала этой части;
+ * remainingMs null - пока ничего не сделано, оценивать не по чему.
+ */
+export function progressEstimate(
+  progress: { done: number; total: number; since: string },
+  now: number,
+): { percent: number; remainingMs: number | null } {
+  const percent = progress.total > 0 ? Math.min(100, Math.floor((progress.done / progress.total) * 100)) : 100;
+  const elapsed = now - new Date(progress.since).getTime();
+  const remainingMs =
+    progress.done > 0 && elapsed > 0 ? Math.round((elapsed / progress.done) * (progress.total - progress.done)) : null;
+  return { percent, remainingMs };
+}
+
 /** Сумма коротко, как на макете экрана процесса: 3,4 млн ₽, 850 тыс ₽ */
 export function moneyShort(value: number | null | undefined): string {
   if (value === null || value === undefined) return '—';

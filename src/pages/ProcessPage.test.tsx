@@ -32,6 +32,7 @@ const RUN: Run = {
       finishedAt: null,
       durationMs: 300,
       metrics: { clients: 6, buyersWithoutData: 1 },
+      progress: null,
     },
     {
       stepNo: 2,
@@ -41,6 +42,7 @@ const RUN: Run = {
       finishedAt: null,
       durationMs: 100,
       metrics: { paymentsUnallocated: 1 },
+      progress: null,
     },
     {
       stepNo: 3,
@@ -50,6 +52,7 @@ const RUN: Run = {
       finishedAt: null,
       durationMs: 100,
       metrics: { openUpds: 28 },
+      progress: null,
     },
     {
       stepNo: 4,
@@ -59,6 +62,7 @@ const RUN: Run = {
       finishedAt: null,
       durationMs: 100,
       metrics: { scoringErrors: 1 },
+      progress: null,
     },
     {
       stepNo: 5,
@@ -68,6 +72,7 @@ const RUN: Run = {
       finishedAt: null,
       durationMs: 100,
       metrics: { offers: 12, noOfferByReason: { STOP_FACTOR: 2 } },
+      progress: null,
     },
   ],
   comparison: { clients: 6, manualMinutes: 1200, systemMinutes: 120, runDurationMs: 2000 },

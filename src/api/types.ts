@@ -32,6 +32,16 @@ export interface RunStep {
   finishedAt: string | null;
   durationMs: number | null;
   metrics: Record<string, unknown> | null;
+  /** прогресс долгой части шага (тексты LLM, оценка моделей); null - у шага её нет */
+  progress: StepProgress | null;
+}
+
+export interface StepProgress {
+  label: string;
+  done: number;
+  total: number;
+  /** начало этой части шага: от него считаются скорость и оставшееся время */
+  since: string;
 }
 
 export interface Run {

@@ -1,6 +1,20 @@
+import { useEffect, useState } from 'react';
 import { CheckCircle2, Circle, CircleX, LoaderCircle, TriangleAlert } from 'lucide-react';
-import type { Run, RunStep, StepStatus } from '@/api/types';
-import { CATEGORIES, REASONS, STEP_STATUSES, date, duration, label, money, moneyShort, plural, time } from '@/lib/format';
+import type { Run, RunStep, StepProgress, StepStatus } from '@/api/types';
+import {
+  CATEGORIES,
+  REASONS,
+  STEP_STATUSES,
+  approxDuration,
+  date,
+  duration,
+  label,
+  money,
+  moneyShort,
+  plural,
+  progressEstimate,
+  time,
+} from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Section } from './Section';
 
@@ -86,6 +100,7 @@ function StepItem({ step }: { step: RunStep }) {
           {step.status === 'PENDING' ? label(STEP_STATUSES, step.status) : duration(step.durationMs)}
         </span>
       </div>
+      {step.status === 'RUNNING' && step.progress && <ProgressLine progress={step.progress} />}
       {step.metrics && (
         <>
           <p className="mt-1.5 text-sm">{stepSummary(step.stepNo, metrics).join(' · ')}</p>
@@ -98,6 +113,47 @@ function StepItem({ step }: { step: RunStep }) {
       )}
     </li>
   );
+}
+
+/** Р-57: сколько из скольких сделано в долгой части шага, процент и сколько примерно осталось */
+function ProgressLine({ progress }: { progress: StepProgress }) {
+  const now = useNow(1000);
+  const { percent, remainingMs } = progressEstimate(progress, now);
+  return (
+    <div className="mt-2" data-testid="step-progress">
+      <div className="flex flex-wrap justify-between gap-x-3 text-sm">
+        <span>
+          {progress.label}: {progress.done.toLocaleString('ru-RU')} из {progress.total.toLocaleString('ru-RU')}
+        </span>
+        <span className="font-semibold tabular-nums">
+          {percent} %{' · '}
+          <span className="font-normal text-muted-foreground">
+            {remainingMs === null ? 'оцениваем время' : `осталось ${approxDuration(remainingMs)}`}
+          </span>
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label={progress.label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+        className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted"
+      >
+        <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/** Текущее время, обновляется раз в intervalMs: оставшееся время идёт и между опросами прогона */
+function useNow(intervalMs: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(timer);
+  }, [intervalMs]);
+  return now;
 }
 
 function StepIcon({ status }: { status: StepStatus }) {
