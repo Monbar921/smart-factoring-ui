@@ -1,16 +1,37 @@
-import { Database, Play, Upload } from 'lucide-react';
+import { Database, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useImportDemo, useRunDefaults, useStartRun } from '@/api/backend';
+import type { Run } from '@/api/types';
 import { ErrorNote } from '@/components/StatusBadges';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { date } from '@/lib/format';
+import { RUN_STATUSES, duration, label } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import { Section } from './Section';
 
 const INPUT =
   'h-9 w-full rounded-md border bg-background px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none';
 
-/** ЭП-1: запуск прогона - набор клиентов и дата расчёта (по умолчанию последняя дата данных) */
-export function LaunchCard({ onStarted }: { onStarted: (runId: number) => void }) {
+const STATUS_COLORS: Record<Run['status'], string> = {
+  RUNNING: 'text-primary',
+  DONE: 'text-success',
+  DONE_WITH_WARNINGS: 'text-amber-700 dark:text-amber-400',
+  STOPPED: 'text-destructive',
+};
+
+/**
+ * ЭП-1: запуск прогона - набор клиентов и дата расчёта (по умолчанию последняя дата данных), под ними -
+ * строка состояния показанного прогона. Без роли operator - только строка состояния.
+ */
+export function LaunchCard({
+  run,
+  canOperate,
+  onStarted,
+}: {
+  run: Run | undefined;
+  canOperate: boolean;
+  onStarted: (runId: number) => void;
+}) {
   const defaults = useRunDefaults();
   const start = useStartRun();
   const [chosenDate, setCalcDate] = useState('');
@@ -19,6 +40,7 @@ export function LaunchCard({ onStarted }: { onStarted: (runId: number) => void }
 
   // по умолчанию - последняя дата данных (ПР-9, ЭП-1)
   const calcDate = chosenDate || defaults.data?.dataDate || '';
+  const clients = defaults.data?.clients ?? [];
 
   const running = defaults.data?.runningRunId != null || start.isPending;
   const noData = defaults.isSuccess && !defaults.data.dataDate;
@@ -31,34 +53,50 @@ export function LaunchCard({ onStarted }: { onStarted: (runId: number) => void }
   };
 
   return (
-    <Card className="gap-4 py-5">
-      <CardHeader className="px-5">
-        <CardTitle className="text-base">Запуск прогона</CardTitle>
-        <CardDescription>
-          Дата данных {date(defaults.data?.dataDate)} · снимок внешних данных {date(defaults.data?.snapshotDate)}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4 px-5">
-        <label className="flex flex-col gap-1 text-sm">
-          Дата расчёта
-          <input
-            type="date"
-            className={INPUT}
-            value={calcDate}
-            onChange={(event) => setCalcDate(event.target.value)}
-            aria-label="Дата расчёта"
-          />
-        </label>
+    <Section title={canOperate ? 'Запуск прогона' : 'Прогон'} requirement="ЭП-1">
+      {canOperate && (
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4">
+            <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-sm">
+              <label htmlFor="launch-clients" className="text-muted-foreground">
+                Клиенты
+              </label>
+              <select
+                id="launch-clients"
+                className={INPUT}
+                value={allClients ? 'all' : 'list'}
+                onChange={(event) => setAllClients(event.target.value === 'all')}
+              >
+                <option value="all">все ({clients.length})</option>
+                <option value="list">выбрать из списка…</option>
+              </select>
+              <label htmlFor="launch-date" className="text-muted-foreground">
+                Дата расчёта
+              </label>
+              <input
+                id="launch-date"
+                type="date"
+                className={INPUT}
+                value={calcDate}
+                onChange={(event) => setCalcDate(event.target.value)}
+                aria-label="Дата расчёта"
+              />
+              <span />
+              <span className="text-xs text-muted-foreground italic">по умолчанию — последняя дата данных</span>
+            </div>
+            <Button
+              size="lg"
+              className="h-auto min-h-16 self-start px-6 text-base"
+              onClick={launch}
+              disabled={running || noData || (!allClients && selected.length === 0)}
+            >
+              {running ? 'Прогон выполняется…' : 'Запустить прогон'}
+            </Button>
+          </div>
 
-        <fieldset className="flex flex-col gap-2 text-sm">
-          <legend className="mb-1">Клиенты</legend>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={allClients} onChange={(event) => setAllClients(event.target.checked)} />
-            Все клиенты ({defaults.data?.clients.length ?? 0})
-          </label>
           {!allClients && (
-            <div className="max-h-48 overflow-y-auto rounded-md border p-2">
-              {defaults.data?.clients.map((client) => (
+            <div className="max-h-48 overflow-y-auto rounded-md border p-2 text-sm">
+              {clients.map((client) => (
                 <label key={client.inn} className="flex items-center gap-2 py-0.5">
                   <input
                     type="checkbox"
@@ -75,17 +113,25 @@ export function LaunchCard({ onStarted }: { onStarted: (runId: number) => void }
               ))}
             </div>
           )}
-        </fieldset>
-
-        <Button onClick={launch} disabled={running || noData || (!allClients && selected.length === 0)}>
-          <Play aria-hidden />
-          {running ? 'Прогон выполняется…' : 'Запустить прогон'}
-        </Button>
-        {noData && <p className="text-sm text-muted-foreground">Нет данных: сначала загрузите демо-набор.</p>}
-        <ErrorNote error={start.error} />
-      </CardContent>
-    </Card>
+          {noData && (
+            <p className="text-sm text-muted-foreground">Нет данных: загрузите демо-набор на вкладке «История прогонов».</p>
+          )}
+          <ErrorNote error={start.error} />
+        </div>
+      )}
+      {run && (
+        <p className={cn('text-sm font-semibold', canOperate && 'mt-3', STATUS_COLORS[run.status])}>
+          Прогон № {run.id} · {label(RUN_STATUSES, run.status).toLowerCase()}
+          {run.status === 'RUNNING' ? ` · шаг ${currentStep(run)} из ${run.steps.length}` : ` · ${duration(run.durationMs)}`}
+        </p>
+      )}
+      {!run && !canOperate && <p className="text-sm text-muted-foreground">Прогонов ещё не было.</p>}
+    </Section>
   );
+}
+
+function currentStep(run: Run): number {
+  return run.steps.find((step) => step.status === 'RUNNING' || step.status === 'PENDING')?.stepNo ?? run.steps.length;
 }
 
 /** Загрузка демо-набора: выгрузка генератора по пути на сервере или ZIP-архивом (Р-30) */

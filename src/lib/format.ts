@@ -27,12 +27,39 @@ export function dateTime(value: string | null | undefined): string {
   return value ? timeFormat.format(new Date(value)) : '—';
 }
 
+const clockFormat = new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+/** Время без даты: 10:41:02 */
+export function time(value: string | null | undefined): string {
+  return value ? clockFormat.format(new Date(value)) : '—';
+}
+
 export function duration(ms: number | null | undefined): string {
   if (ms === null || ms === undefined) return '—';
   if (ms < 1000) return `${ms} мс`;
   const seconds = Math.round(ms / 100) / 10;
   if (seconds < 60) return `${seconds.toLocaleString('ru-RU')} с`;
   return `${Math.floor(seconds / 60)} мин ${Math.round(seconds % 60)} с`;
+}
+
+/** Сумма коротко, как на макете экрана процесса: 3,4 млн ₽, 850 тыс ₽ */
+export function moneyShort(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '—';
+  const abs = Math.abs(value);
+  const short = (divider: number, unit: string) =>
+    `${(value / divider).toLocaleString('ru-RU', { maximumFractionDigits: 1 })} ${unit} ₽`;
+  if (abs >= 1e9) return short(1e9, 'млрд');
+  if (abs >= 1e6) return short(1e6, 'млн');
+  if (abs >= 1e4) return short(1e3, 'тыс');
+  return money(value);
+}
+
+/** Число со словом в нужной форме: plural(3, ['платёж', 'платежа', 'платежей']) - «3 платежа» */
+export function plural(count: number, forms: [string, string, string]): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  const form = mod10 === 1 && mod100 !== 11 ? 0 : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 1 : 2;
+  return `${count.toLocaleString('ru-RU')} ${forms[form]}`;
 }
 
 export function minutesAsHours(minutes: number): string {
@@ -106,6 +133,11 @@ export const CATEGORIES: Record<number, string> = {
   7: 'Не оплачен, просрочка > 30 дн.',
   8: 'Не оплачен, просрочка ≤ 30 дн.',
 };
+
+/** Первая буква строчной для середины фразы; аббревиатуры (УПД, PD) - как есть */
+export function lowerFirst(text: string): string {
+  return /^\p{Lu}{2}/u.test(text) ? text : text.charAt(0).toLowerCase() + text.slice(1);
+}
 
 export function label(dictionary: Record<string, string>, code: string | null | undefined): string {
   return code ? (dictionary[code] ?? code) : '—';

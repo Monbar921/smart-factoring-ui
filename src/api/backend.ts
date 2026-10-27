@@ -100,7 +100,7 @@ export function useRunUpds(runId: number | null, filter: UpdFilter, enabled: boo
   const token = useToken();
   return useQuery({
     queryKey: ['runs', runId, 'upds', filter],
-    queryFn: () => apiJson<Page<RunUpd>>(`${BASE}/runs/${runId}/upds${query({ ...filter, size: 25 })}`, token!),
+    queryFn: () => apiJson<Page<RunUpd>>(`${BASE}/runs/${runId}/upds${query({ ...filter, size: 10 })}`, token!),
     enabled: Boolean(token) && runId !== null && enabled,
     placeholderData: keepPreviousData,
   });

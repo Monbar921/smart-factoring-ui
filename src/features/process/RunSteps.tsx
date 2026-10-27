@@ -1,12 +1,13 @@
-import { Clock, Timer } from 'lucide-react';
-import type { Run, RunStep } from '@/api/types';
-import { RunStatusBadge, StepStatusBadge } from '@/components/StatusBadges';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CATEGORIES, REASONS, date, dateTime, duration, label, minutesAsHours, money } from '@/lib/format';
+import { CheckCircle2, Circle, CircleX, LoaderCircle, TriangleAlert } from 'lucide-react';
+import type { Run, RunStep, StepStatus } from '@/api/types';
+import { CATEGORIES, REASONS, STEP_STATUSES, date, duration, label, money, moneyShort, plural, time } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import { Section } from './Section';
 
+type Metrics = Record<string, unknown>;
 type MetricKind = 'count' | 'money' | 'date' | 'fraction';
 
-/** ЭП-3: какие числа показывать по каждому шагу и как их подписывать */
+/** ЭП-3: все числа шага - в «подробнее» под строкой-итогом */
 const STEP_METRICS: Record<number, [string, string, MetricKind][]> = {
   1: [
     ['clients', 'Клиентов', 'count'],
@@ -16,6 +17,7 @@ const STEP_METRICS: Record<number, [string, string, MetricKind][]> = {
     ['buyers', 'Покупателей', 'count'],
     ['buyersWithoutData', 'Покупателей без данных', 'count'],
     ['dataDate', 'Дата данных', 'date'],
+    ['snapshotDate', 'Снимок внешних данных', 'date'],
   ],
   2: [
     ['paymentsAllocated', 'Распределено автоматически', 'count'],
@@ -40,6 +42,7 @@ const STEP_METRICS: Record<number, [string, string, MetricKind][]> = {
   5: [
     ['offers', 'УПД с предложением', 'count'],
     ['noOffers', 'Без предложения', 'count'],
+    ['queuedOffers', 'В очередях менеджеров', 'count'],
     ['eadTotal', 'Сумма финансирования', 'money'],
     ['incomeTotal', 'Доход банка', 'money'],
     ['expectedAccepted', 'Ожидаемо принятых (Σ TR)', 'fraction'],
@@ -47,6 +50,156 @@ const STEP_METRICS: Record<number, [string, string, MetricKind][]> = {
     ['revokedOffers', 'Отозвано', 'count'],
     ['withoutMessageDraft', 'Без черновика (сбой LLM)', 'count'],
   ],
+};
+
+/** ЭП-2, ЭП-3: пять шагов прогона со статусом, временем и строкой-итогом, как на макете рис. 4 BRD */
+export function RunSteps({ run }: { run: Run }) {
+  return (
+    <Section title="Ход прогона и результат шагов" requirement="ЭП-2, ЭП-3">
+      {run.errorMessage && <p className="mb-2 text-sm text-destructive">{run.errorMessage}</p>}
+      <ol className="flex flex-col gap-2.5">
+        {run.steps.map((step) => (
+          <StepItem key={step.stepNo} step={step} />
+        ))}
+      </ol>
+      <p className="mt-3 text-xs text-muted-foreground italic">Блок 6 — после прогона, по кнопкам менеджера (ЭП-7)</p>
+    </Section>
+  );
+}
+
+function StepItem({ step }: { step: RunStep }) {
+  const metrics = step.metrics ?? {};
+  const warnings = stepWarnings(step.stepNo, metrics);
+  return (
+    <li className="rounded-lg border bg-muted/40 px-4 py-3" data-testid={`step-${step.stepNo}`}>
+      <div className="flex items-center gap-3">
+        <StepIcon status={step.status} />
+        <span className="font-semibold">
+          {step.stepNo} {step.name}
+        </span>
+        <span className="sr-only">{label(STEP_STATUSES, step.status)}</span>
+        <span
+          className={cn('ml-auto text-sm font-semibold tabular-nums', step.status === 'DONE' && 'text-success')}
+          title={step.startedAt ? `начало ${time(step.startedAt)}` : undefined}
+        >
+          {step.startedAt && <span className="mr-2 text-xs font-normal text-muted-foreground">{time(step.startedAt)}</span>}
+          {step.status === 'PENDING' ? label(STEP_STATUSES, step.status) : duration(step.durationMs)}
+        </span>
+      </div>
+      {step.metrics && (
+        <>
+          <p className="mt-1.5 text-sm">{stepSummary(step.stepNo, metrics).join(' · ')}</p>
+          {warnings.length > 0 && <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">{warnings.join(' · ')}</p>}
+          <details className="mt-1 text-xs">
+            <summary className="cursor-pointer text-muted-foreground">все числа шага</summary>
+            <StepMetrics stepNo={step.stepNo} metrics={metrics} />
+          </details>
+        </>
+      )}
+    </li>
+  );
+}
+
+function StepIcon({ status }: { status: StepStatus }) {
+  const common = 'size-6 shrink-0';
+  if (status === 'DONE') return <CheckCircle2 className={cn(common, 'text-success')} aria-hidden />;
+  if (status === 'RUNNING') return <LoaderCircle className={cn(common, 'animate-spin text-primary')} aria-hidden />;
+  if (status === 'WARNING') return <TriangleAlert className={cn(common, 'text-amber-600')} aria-hidden />;
+  if (status === 'STOPPED') return <CircleX className={cn(common, 'text-destructive')} aria-hidden />;
+  return <Circle className={cn(common, 'text-muted-foreground')} aria-hidden />;
+}
+
+const num = (value: unknown) => Number(value ?? 0);
+const entries = (value: unknown) => Object.entries((value ?? {}) as Record<string, number>);
+
+/** Строка-итог шага (ЭП-3), формулировки - как на макете */
+function stepSummary(stepNo: number, m: Metrics): string[] {
+  switch (stepNo) {
+    case 1:
+      return [
+        plural(num(m.clients), ['клиент', 'клиента', 'клиентов']),
+        `${plural(num(m.newUpds), ['новый УПД', 'новых УПД', 'новых УПД'])}`,
+        plural(num(m.payments), ['платёж', 'платежа', 'платежей']),
+        `${plural(num(m.buyers), ['покупатель', 'покупателя', 'покупателей'])}, без данных — ${num(m.buyersWithoutData)}`,
+        `данные на ${date(String(m.dataDate ?? ''))}`,
+      ];
+    case 2: {
+      const allocated = num(m.paymentsAllocated);
+      const total = allocated + num(m.paymentsUnallocated);
+      return [
+        `распределено ${allocated} из ${plural(total, ['платежа', 'платежей', 'платежей'])}`,
+        `нераспределено ${num(m.paymentsUnallocated)}${num(m.amountUnallocated) ? ` (${money(num(m.amountUnallocated))})` : ''}`,
+        `закрыто УПД: ${num(m.updsClosed)}`,
+      ];
+    }
+    case 3: {
+      const byCategory = entries(m.byCategory);
+      const sum = (from: number, to: number) =>
+        byCategory.filter(([code]) => Number(code) >= from && Number(code) <= to).reduce((total, [, count]) => total + count, 0);
+      return [
+        `открытых УПД ${num(m.openUpds)}`,
+        `категории 1–4: ${sum(1, 4)}`,
+        `категории 5–8: ${sum(5, 8)}`,
+        `уведомлений о просрочке ${num(m.overdueNotifications)}`,
+        `сигналов в риск ${num(m.riskSignals)}`,
+      ];
+    }
+    case 4: {
+      const levels = (m.buyersByRiskLevel ?? {}) as Record<string, number>;
+      return [
+        `стоп-факторы: ${plural(num(m.stopFactorBuyers), ['покупатель', 'покупателя', 'покупателей'])}`,
+        `без истории оплат: ${num(m.noPaymentHistoryBuyers)}`,
+        `«мало данных»: ${num(m.lowDataBuyers)}`,
+        `уровни A / B / C / D: ${['A', 'B', 'C', 'D'].map((level) => levels[level] ?? 0).join(' / ')}`,
+        `вероятная задержка: ${num(m.delayProbableUpds)} УПД`,
+      ];
+    }
+    case 5:
+      return [
+        `с предложением ${num(m.offers)}, без предложения ${num(m.noOffers)}`,
+        `в очереди ${num(m.queuedOffers)}`,
+        `сумма ${moneyShort(num(m.eadTotal))}`,
+        `доход банка ${moneyShort(num(m.incomeTotal))}`,
+        `уведомлений ${num(m.newOfferNotifications)}`,
+      ];
+    default:
+      return [];
+  }
+}
+
+/** Технические сбои шага - отдельной строкой, чтобы их не пропустить (статус «предупреждение», ПР-6) */
+function stepWarnings(stepNo: number, m: Metrics): string[] {
+  if (stepNo === 4 && num(m.scoringErrors) > 0) return [`ошибок оценки: ${num(m.scoringErrors)}`];
+  if (stepNo === 5 && num(m.withoutMessageDraft) > 0) return [`без черновика (сбой LLM): ${num(m.withoutMessageDraft)}`];
+  return [];
+}
+
+function StepMetrics({ stepNo, metrics }: { stepNo: number; metrics: Metrics }) {
+  return (
+    <dl className="mt-1 flex flex-col gap-0.5">
+      {(STEP_METRICS[stepNo] ?? []).map(([key, title, kind]) => (
+        <div key={key} className="flex justify-between gap-2">
+          <dt className="text-muted-foreground">{title}</dt>
+          <dd className="text-right font-medium tabular-nums">{formatMetric(metrics[key], kind)}</dd>
+        </div>
+      ))}
+      <NestedMetric
+        title="По категориям"
+        value={metrics.byCategory}
+        labelOf={(code) => `${code}: ${CATEGORIES[Number(code)] ?? ''}`}
+      />
+      <NestedMetric title="Уровни риска" value={metrics.buyersByRiskLevel} />
+      <NestedMetric title="Причины отказа" value={metrics.noOfferByReason} labelOf={(code) => label(REASONS, code)} />
+      <NestedMetric title="Тексты карточек" value={metrics.textsBySource} labelOf={(code) => label(TEXT_SOURCES, code)} />
+    </dl>
+  );
+}
+
+const TEXT_SOURCES: Record<string, string> = {
+  LLM: 'от LLM',
+  CACHE: 'из кеша',
+  TEMPLATE: 'шаблоном',
+  FAILED: 'сбой LLM',
 };
 
 function formatMetric(value: unknown, kind: MetricKind): string {
@@ -57,84 +210,13 @@ function formatMetric(value: unknown, kind: MetricKind): string {
   return Number(value).toLocaleString('ru-RU');
 }
 
-/** ЭП-2, ЭП-3: ход прогона по шагам и ключевые числа результата шага */
-export function RunSteps({ run }: { run: Run }) {
-  return (
-    <Card className="gap-4 py-5">
-      <CardHeader className="px-5">
-        <CardTitle className="flex flex-wrap items-center gap-3 text-base">
-          Прогон № {run.id}
-          <RunStatusBadge status={run.status} />
-        </CardTitle>
-        <CardDescription className="flex flex-wrap gap-x-4 gap-y-1">
-          <span>Дата расчёта {date(run.calcDate)}</span>
-          <span>Запуск {dateTime(run.startedAt)}</span>
-          <span>Длительность {duration(run.durationMs)}</span>
-          <span>{run.clientInns ? `Клиентов: ${run.clientInns.length}` : 'Все клиенты'}</span>
-          <span>Снимок внешних данных {date(run.snapshotDate)}</span>
-          {run.modelVersions && (
-            <span>
-              Модели:{' '}
-              {Object.entries(run.modelVersions)
-                .map(([name, version]) => `${name} ${version}`)
-                .join(', ')}
-            </span>
-          )}
-        </CardDescription>
-        {run.errorMessage && <p className="text-sm text-destructive">{run.errorMessage}</p>}
-      </CardHeader>
-      <CardContent className="px-5">
-        <ol className="grid gap-3 md:grid-cols-5">
-          {run.steps.map((step) => (
-            <StepCard key={step.stepNo} step={step} />
-          ))}
-        </ol>
-        {run.comparison && <ManualComparison comparison={run.comparison} />}
-      </CardContent>
-    </Card>
-  );
-}
-
-function StepCard({ step }: { step: RunStep }) {
-  const metrics = step.metrics ?? {};
-  return (
-    <li className="flex flex-col gap-2 rounded-lg border p-3" data-testid={`step-${step.stepNo}`}>
-      <span className="text-xs text-muted-foreground">Шаг {step.stepNo}</span>
-      <span className="text-sm leading-tight font-medium">{step.name}</span>
-      <StepStatusBadge status={step.status} />
-      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-        <Clock className="size-3" aria-hidden />
-        {step.startedAt ? dateTime(step.startedAt) : '—'} · {duration(step.durationMs)}
-      </span>
-      {step.metrics && (
-        <dl className="mt-1 flex flex-col gap-1 text-xs">
-          {(STEP_METRICS[step.stepNo] ?? []).map(([key, title, kind]) => (
-            <div key={key} className="flex justify-between gap-2">
-              <dt className="text-muted-foreground">{title}</dt>
-              <dd className="text-right font-medium tabular-nums">{formatMetric(metrics[key], kind)}</dd>
-            </div>
-          ))}
-          <NestedMetric
-            title="По категориям"
-            value={metrics.byCategory}
-            labelOf={(code) => `${code}: ${CATEGORIES[Number(code)] ?? ''}`}
-          />
-          <NestedMetric title="Уровни риска" value={metrics.buyersByRiskLevel} />
-          <NestedMetric title="Причины отказа" value={metrics.noOfferByReason} labelOf={(code) => label(REASONS, code)} />
-        </dl>
-      )}
-    </li>
-  );
-}
-
 function NestedMetric({ title, value, labelOf }: { title: string; value: unknown; labelOf?: (code: string) => string }) {
-  if (!value || typeof value !== 'object') return null;
-  const entries = Object.entries(value as Record<string, number>);
-  if (entries.length === 0) return null;
+  const items = entries(value);
+  if (items.length === 0) return null;
   return (
     <div className="mt-1 border-t pt-1">
       <dt className="mb-0.5 text-muted-foreground">{title}</dt>
-      {entries.map(([code, count]) => (
+      {items.map(([code, count]) => (
         <dd key={code} className="flex justify-between gap-2">
           <span className="truncate" title={labelOf ? labelOf(code) : code}>
             {labelOf ? labelOf(code) : code}
@@ -142,29 +224,6 @@ function NestedMetric({ title, value, labelOf }: { title: string; value: unknown
           <span className="font-medium tabular-nums">{count}</span>
         </dd>
       ))}
-    </div>
-  );
-}
-
-/** ЭП-9: время прогона и расчётное время ручной проработки тех же клиентов (допущение, Приложение А) */
-function ManualComparison({ comparison }: { comparison: NonNullable<Run['comparison']> }) {
-  return (
-    <div className="mt-4 grid gap-3 rounded-lg bg-muted/50 p-4 text-sm sm:grid-cols-3">
-      <div>
-        <div className="text-xs text-muted-foreground">Вручную: {comparison.clients} клиентов × 200 мин</div>
-        <div className="text-lg font-semibold">{minutesAsHours(comparison.manualMinutes)}</div>
-      </div>
-      <div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Timer className="size-3" aria-hidden />
-          Прогон системы
-        </div>
-        <div className="text-lg font-semibold">{duration(comparison.runDurationMs)}</div>
-      </div>
-      <div>
-        <div className="text-xs text-muted-foreground">Менеджеру остаётся (≈ 20 мин на клиента)</div>
-        <div className="text-lg font-semibold">{minutesAsHours(comparison.systemMinutes)}</div>
-      </div>
     </div>
   );
 }

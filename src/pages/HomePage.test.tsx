@@ -34,7 +34,7 @@ describe('HomePage', () => {
     renderWithQuery(<HomePage />);
 
     expect(await screen.findByText('Запуск прогона')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Экран процесса' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Прогон' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Эмулятор CRM' })).not.toBeInTheDocument();
   });
 
@@ -43,7 +43,7 @@ describe('HomePage', () => {
 
     renderWithQuery(<HomePage />);
 
-    expect(await screen.findByText('Выберите прогон в истории.')).toBeInTheDocument();
+    expect(await screen.findByText('Выберите прогон в истории прогонов.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Эмулятор CRM' })).toBeInTheDocument();
     expect(screen.queryByText('Запуск прогона')).not.toBeInTheDocument();
   });
@@ -54,6 +54,6 @@ describe('HomePage', () => {
     renderWithQuery(<HomePage />);
 
     expect(screen.getByText('Нет доступа')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Экран процесса' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Прогон' })).not.toBeInTheDocument();
   });
 });

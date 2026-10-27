@@ -1,11 +1,12 @@
 import { useFunnel } from '@/api/backend';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { REASONS, label, money } from '@/lib/format';
+import { REASONS, label, lowerFirst, money } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { Section } from './Section';
 
 /**
- * ЭП-4: как открытые УПД сокращаются от шага к шагу. По ступени или причине отсева открывается список УПД (ЭП-5).
+ * ЭП-4: как открытые УПД сокращаются от шага к шагу - число на каждой ступени и причина отсева справа,
+ * как на макете рис. 4 BRD. По ступени или причине открывается список УПД в детализации (ЭП-5).
  */
 export function Funnel({
   runId,
@@ -19,52 +20,78 @@ export function Funnel({
   onSelect: (filter: { stage?: string; reason?: string }) => void;
 }) {
   const funnel = useFunnel(runId, enabled);
-  const total = funnel.data?.[0]?.count || 1;
+  const stages = funnel.data ?? [];
+  const total = stages[0]?.count || 1;
 
   return (
-    <Card className="gap-4 py-5">
-      <CardHeader className="px-5">
-        <CardTitle className="text-base">Воронка УПД</CardTitle>
-        <CardDescription>Нажмите на ступень или причину, чтобы открыть список УПД</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-2 px-5">
-        {!enabled && <p className="text-sm text-muted-foreground">Воронка появится после завершения прогона.</p>}
-        {enabled && funnel.isPending && <Skeleton className="h-48 w-full" />}
-        {funnel.data?.map((stage) => (
-          <div key={stage.code} className="flex flex-col gap-1">
-            <button
-              type="button"
-              onClick={() => onSelect(stage.code === 'OPEN' ? {} : { stage: stage.code })}
-              className={cn('group flex items-center gap-3 text-left text-sm', selectedStage === stage.code && 'font-semibold')}
+    <Section title="Воронка УПД" requirement="ЭП-4">
+      {!enabled && <p className="text-sm text-muted-foreground">Воронка появится после завершения прогона.</p>}
+      {enabled && funnel.isPending && <Skeleton className="h-48 w-full" />}
+      <ul className="flex flex-col gap-2">
+        {stages.map((stage, index) => {
+          const first = index === 0;
+          const last = index === stages.length - 1;
+          const dropped = stage.dropped.reduce((sum, drop) => sum + drop.count, 0);
+          return (
+            <li
+              key={stage.code}
+              className="grid grid-cols-[minmax(9rem,14rem)_minmax(0,1fr)] items-center gap-x-3 lg:grid-cols-[15rem_minmax(0,1fr)_minmax(0,20rem)]"
             >
-              <span className="w-56 shrink-0 truncate">{stage.title}</span>
-              <span className="relative h-6 flex-1 overflow-hidden rounded bg-muted">
+              <button
+                type="button"
+                onClick={() => onSelect(first ? {} : { stage: stage.code })}
+                className={cn(
+                  'truncate text-left text-sm hover:underline',
+                  (first || last || selectedStage === stage.code) && 'font-semibold',
+                )}
+                title={stage.title}
+              >
+                {stage.title}
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelect(first ? {} : { stage: stage.code })}
+                className="group flex min-w-0 items-center gap-2"
+                title={money(stage.amount)}
+                aria-label={`${stage.title}: ${stage.count}`}
+              >
                 <span
-                  className="absolute inset-y-0 left-0 rounded bg-primary/70 transition-[width] group-hover:bg-primary"
-                  style={{ width: `${Math.max(2, (stage.count / total) * 100)}%` }}
+                  className={cn(
+                    'h-7 shrink-0 rounded-sm transition-opacity group-hover:opacity-80',
+                    last ? 'bg-success' : 'bg-primary',
+                  )}
+                  style={{ width: `${Math.max(1.5, (stage.count / total) * 80)}%` }}
                 />
+                <span className="font-semibold tabular-nums">{stage.count.toLocaleString('ru-RU')}</span>
+              </button>
+              <span className="col-span-2 text-right text-sm text-amber-700 lg:col-span-1 dark:text-amber-400">
+                {dropped > 0 && (
+                  <>
+                    −{dropped}{' '}
+                    {stage.dropped.map((drop, i) => (
+                      <span key={drop.reason}>
+                        {i > 0 && ', '}
+                        <button
+                          type="button"
+                          className="hover:underline"
+                          onClick={() => onSelect({ stage: stage.code, reason: drop.reason })}
+                          title={`${drop.count} УПД, ${money(drop.amount)}`}
+                        >
+                          {lowerFirst(label(REASONS, drop.reason))}
+                          {stage.dropped.length > 1 && ` (${drop.count})`}
+                        </button>
+                      </span>
+                    ))}
+                  </>
+                )}
               </span>
-              <span className="w-12 text-right font-medium tabular-nums">{stage.count}</span>
-              <span className="w-32 text-right text-xs text-muted-foreground tabular-nums">{money(stage.amount)}</span>
-            </button>
-            {stage.dropped.length > 0 && (
-              <ul className="ml-56 flex flex-wrap gap-1 pl-3">
-                {stage.dropped.map((drop) => (
-                  <li key={drop.reason}>
-                    <button
-                      type="button"
-                      onClick={() => onSelect({ stage: stage.code, reason: drop.reason })}
-                      className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-                    >
-                      − {drop.count} · {label(REASONS, drop.reason)} · {money(drop.amount)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+            </li>
+          );
+        })}
+      </ul>
+      {stages.length > 0 && (
+        <p className="mt-2 text-xs text-muted-foreground italic">По ступени или причине открывается список УПД в детализации</p>
+      )}
+    </Section>
   );
 }

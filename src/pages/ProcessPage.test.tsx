@@ -138,14 +138,21 @@ describe('ProcessPage', () => {
 
     renderWithQuery(<ProcessPage />);
 
-    expect(await screen.findByText('Прогон № 7')).toBeInTheDocument();
+    // ЭП-1: строка состояния прогона под запуском
+    expect(await screen.findByText(/Прогон № 7 · выполнен/)).toBeInTheDocument();
+    // ЭП-2, ЭП-3: шаги со статусом и строкой-итогом, сбой - отдельной строкой
+    expect(within(screen.getByTestId('step-1')).getByText(/6 клиентов/)).toBeInTheDocument();
     const step4 = screen.getByTestId('step-4');
     expect(within(step4).getByText('Предупреждение')).toBeInTheDocument();
-    expect(within(step4).getByText('Ошибок оценки')).toBeInTheDocument();
-    expect(within(screen.getByTestId('step-5')).getByText('Стоп-фактор')).toBeInTheDocument();
-    expect(await screen.findByText(/2 · Стоп-фактор/)).toBeInTheDocument();
-    expect(screen.getByText('20 ч')).toBeInTheDocument();
-    expect(await screen.findByText('RUN_STARTED')).toBeInTheDocument();
+    expect(within(step4).getByText('ошибок оценки: 1')).toBeInTheDocument();
+    expect(within(screen.getByTestId('step-5')).getByText(/с предложением 12/)).toBeInTheDocument();
+    // ЭП-4: причина отсева справа от ступени
+    expect(await screen.findByRole('button', { name: 'стоп-фактор' })).toBeInTheDocument();
+    expect(screen.getByText(/−2/)).toBeInTheDocument();
+    // ЭП-9 и ЭП-6
+    expect(screen.getByText('≈ 2,5 рабочего дня')).toBeInTheDocument();
+    expect(screen.getByText(/запуск прогона № 7 \(operator\)/)).toBeInTheDocument();
+    expect(screen.getByText(/модель PD pd-stub-1/)).toBeInTheDocument();
   });
 
   it('запускает прогон с датой расчёта по умолчанию - последней датой данных', async () => {
