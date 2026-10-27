@@ -1,10 +1,8 @@
-import { Database, Upload } from 'lucide-react';
 import { useState } from 'react';
-import { useImportDemo, useRunDefaults, useStartRun } from '@/api/backend';
+import { useRunDefaults, useStartRun } from '@/api/backend';
 import type { Run } from '@/api/types';
 import { ErrorNote } from '@/components/StatusBadges';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RUN_STATUSES, duration, label } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Section } from './Section';
@@ -114,7 +112,7 @@ export function LaunchCard({
             </div>
           )}
           {noData && (
-            <p className="text-sm text-muted-foreground">Нет данных: загрузите демо-набор на вкладке «История прогонов».</p>
+            <p className="text-sm text-muted-foreground">Нет данных: загрузите выгрузку на вкладке «История прогонов».</p>
           )}
           <ErrorNote error={start.error} />
         </div>
@@ -132,69 +130,4 @@ export function LaunchCard({
 
 function currentStep(run: Run): number {
   return run.steps.find((step) => step.status === 'RUNNING' || step.status === 'PENDING')?.stepNo ?? run.steps.length;
-}
-
-/** Загрузка демо-набора: выгрузка генератора по пути на сервере или ZIP-архивом (Р-30) */
-export function DemoImportCard() {
-  const importDemo = useImportDemo();
-  const [path, setPath] = useState('');
-  const [confirmed, setConfirmed] = useState(false);
-
-  return (
-    <Card className="gap-4 py-5">
-      <CardHeader className="px-5">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Database className="size-4 text-muted-foreground" aria-hidden />
-          Демо-набор
-        </CardTitle>
-        <CardDescription>Импорт заменяет демо-данные и сбрасывает историю прогонов.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3 px-5 text-sm">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
-          Понимаю, что прогоны и решения будут удалены
-        </label>
-        <div className="flex gap-2">
-          <input
-            className={INPUT}
-            placeholder="Папка выгрузки на сервере"
-            value={path}
-            onChange={(event) => setPath(event.target.value)}
-            aria-label="Папка выгрузки на сервере"
-          />
-          <Button
-            variant="outline"
-            disabled={!confirmed || !path || importDemo.isPending}
-            onClick={() => importDemo.mutate({ path })}
-          >
-            Импорт
-          </Button>
-        </div>
-        <label className="flex cursor-pointer items-center gap-2 text-primary">
-          <Upload className="size-4" aria-hidden />
-          <span>ZIP-архив выгрузки</span>
-          <input
-            type="file"
-            accept=".zip"
-            className="sr-only"
-            disabled={!confirmed || importDemo.isPending}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) importDemo.mutate({ file });
-              event.target.value = '';
-            }}
-          />
-        </label>
-        {importDemo.isSuccess && (
-          <p className="text-success">
-            Загружено:{' '}
-            {Object.entries(importDemo.data.rowCounts)
-              .map(([table, count]) => `${table} ${count}`)
-              .join(', ')}
-          </p>
-        )}
-        <ErrorNote error={importDemo.error} />
-      </CardContent>
-    </Card>
-  );
 }

@@ -209,9 +209,22 @@ export interface ClientCard {
   upds: CardUpd[];
 }
 
+/** Импорт - дельта (Р-52): итог по таблицам и замечания по строкам */
 export interface ImportResult {
   batchId: number;
   dataDate: string | null;
   snapshotDate: string | null;
   rowCounts: Record<string, number>;
+  tables: Record<string, { rows: number; inserted: number; updated: number; unchanged: number; conflicts: number }>;
+  issueCounts: Record<string, number>;
+  issues: ImportIssue[];
+}
+
+export interface ImportIssue {
+  /** CONFLICT - строка пропущена, CHANGED - запись обновлена, DUPLICATE - возможный дубль, WARNING - требует внимания */
+  level: 'CONFLICT' | 'CHANGED' | 'DUPLICATE' | 'WARNING';
+  file: string;
+  line: number | null;
+  key: string | null;
+  message: string;
 }

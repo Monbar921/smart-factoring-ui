@@ -142,6 +142,16 @@ export function useImportDemo() {
   });
 }
 
+/** Полная очистка демо-данных и истории прогонов (импорт сам ничего не стирает) */
+export function useResetDemo() {
+  const token = useToken();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch(`${BASE}/demo/data`, token!, { method: 'DELETE' }),
+    onSuccess: () => client.invalidateQueries(),
+  });
+}
+
 // ------------------------------------------------------------------ эмулятор CRM
 
 export function useManagers() {
