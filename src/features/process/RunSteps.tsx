@@ -120,7 +120,7 @@ function stepSummary(stepNo: number, m: Metrics): string[] {
         plural(num(m.clients), ['клиент', 'клиента', 'клиентов']),
         `${plural(num(m.newUpds), ['новый УПД', 'новых УПД', 'новых УПД'])}`,
         plural(num(m.payments), ['платёж', 'платежа', 'платежей']),
-        `${plural(num(m.buyers), ['покупатель', 'покупателя', 'покупателей'])}, без данных — ${num(m.buyersWithoutData)}`,
+        `${plural(num(m.buyers), ['покупатель', 'покупателя', 'покупателей'])} (без данных: ${num(m.buyersWithoutData)})`,
         `данные на ${date(String(m.dataDate ?? ''))}`,
       ];
     case 2: {

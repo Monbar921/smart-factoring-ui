@@ -54,8 +54,9 @@ export function LaunchCard({
     <Section title={canOperate ? 'Запуск прогона' : 'Прогон'} requirement="ЭП-1">
       {canOperate && (
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4">
-            <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-sm">
+          {/* поля не уже 16rem: если места не хватает, кнопка уходит под них, а не сжимает дату */}
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="grid min-w-64 flex-1 grid-cols-[6.5rem_minmax(9.5rem,1fr)] items-center gap-x-3 gap-y-2 text-sm">
               <label htmlFor="launch-clients" className="text-muted-foreground">
                 Клиенты
               </label>
@@ -84,7 +85,7 @@ export function LaunchCard({
             </div>
             <Button
               size="lg"
-              className="h-auto min-h-16 self-start px-6 text-base"
+              className="h-auto min-h-16 px-6 text-base"
               onClick={launch}
               disabled={running || noData || (!allClients && selected.length === 0)}
             >

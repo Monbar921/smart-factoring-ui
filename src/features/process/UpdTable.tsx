@@ -104,16 +104,16 @@ export function UpdTable({
               onClick={() => setTraceId(upd.updId)}
             >
               <TableCell className="font-medium whitespace-nowrap">{upd.number}</TableCell>
-              <TableCell className="max-w-40 truncate" title={upd.client.name ?? undefined}>
+              <TableCell className="max-w-36 truncate" title={upd.client.name ?? undefined}>
                 {upd.client.name}
               </TableCell>
-              <TableCell className="max-w-40 truncate" title={upd.buyer.inn}>
+              <TableCell className="max-w-36 truncate" title={`${upd.buyer.name ?? ''} ${upd.buyer.inn}`.trim()}>
                 {upd.buyer.name ?? <span className="font-mono">{upd.buyer.inn}</span>}
               </TableCell>
               <TableCell>{upd.category ?? '—'}</TableCell>
               <TableCell className="whitespace-nowrap tabular-nums">{pdAndLevel(upd)}</TableCell>
               <TableCell className="tabular-nums">{upd.reason === 'STOP_FACTOR' ? '—' : percent(upd.pDelay)}</TableCell>
-              <TableCell className="min-w-56 whitespace-normal">{decision(upd)}</TableCell>
+              <TableCell className="min-w-44 whitespace-normal">{decision(upd)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

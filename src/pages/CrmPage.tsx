@@ -6,6 +6,7 @@ import { ErrorNote, RiskBadge } from '@/components/StatusBadges';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { NOTIFICATION_TYPES, REASONS, date, dateTime, label, money, percent } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -46,7 +47,7 @@ export function CrmPage() {
         {managers.data?.length === 0 && <span className="text-sm text-muted-foreground">Менеджеров нет: запустите прогон.</span>}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_24rem]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="flex min-w-0 flex-col gap-6">
           <Card className="gap-3 py-5">
             <CardHeader className="px-5">
@@ -97,6 +98,13 @@ export function CrmPage() {
                   ))}
                 </TableBody>
               </Table>
+              {(managers.isPending || (managerId !== null && queue.isPending)) && (
+                <div className="flex flex-col gap-2 px-2 py-3" role="status" aria-label="Загрузка очереди">
+                  {[0, 1, 2].map((row) => (
+                    <Skeleton key={row} className="h-9 w-full" />
+                  ))}
+                </div>
+              )}
               {queue.data?.length === 0 && <p className="px-2 py-4 text-sm text-muted-foreground">Очередь пуста.</p>}
             </CardContent>
           </Card>
