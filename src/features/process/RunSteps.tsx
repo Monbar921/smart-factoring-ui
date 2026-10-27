@@ -45,6 +45,7 @@ const STEP_METRICS: Record<number, [string, string, MetricKind][]> = {
     ['expectedAccepted', 'Ожидаемо принятых (Σ TR)', 'fraction'],
     ['newOfferNotifications', 'Уведомлений о новых', 'count'],
     ['revokedOffers', 'Отозвано', 'count'],
+    ['withoutMessageDraft', 'Без черновика (сбой LLM)', 'count'],
   ],
 };
 

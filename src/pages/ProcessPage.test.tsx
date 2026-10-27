@@ -158,4 +158,18 @@ describe('ProcessPage', () => {
     const post = calls.find((call) => call.method === 'POST');
     expect(post?.body).toEqual({ clientInns: null, calcDate: '2026-10-24' });
   });
+
+  it('кнопка запуска снова доступна, когда прогон закончился', async () => {
+    let runningRunId: number | null = 8;
+    mockApi({
+      ...routes(),
+      'GET /api/backend/runs/defaults': () => ({ dataDate: '2026-10-24', snapshotDate: '2026-10-20', clients: [], runningRunId }),
+    });
+
+    renderWithQuery(<ProcessPage />);
+    expect(await screen.findByRole('button', { name: 'Прогон выполняется…' })).toBeDisabled();
+
+    runningRunId = null;
+    expect(await screen.findByRole('button', { name: 'Запустить прогон' }, { timeout: 5000 })).toBeEnabled();
+  });
 });

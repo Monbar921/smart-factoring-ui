@@ -42,6 +42,8 @@ export function useRunDefaults() {
     queryKey: ['runs', 'defaults'],
     queryFn: () => apiJson<RunDefaults>(`${BASE}/runs/defaults`, token!),
     enabled: Boolean(token),
+    // пока идёт прогон - опрашиваем: иначе кнопка запуска остаётся «Прогон выполняется…» после его окончания
+    refetchInterval: (q) => (q.state.data?.runningRunId != null ? RUN_POLL_MS : false),
   });
 }
 
