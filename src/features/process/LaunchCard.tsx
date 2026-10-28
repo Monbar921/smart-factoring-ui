@@ -3,7 +3,7 @@ import { useRunDefaults, useStartRun } from '@/api/backend';
 import type { Run } from '@/api/types';
 import { ErrorNote } from '@/components/StatusBadges';
 import { Button } from '@/components/ui/button';
-import { RUN_STATUSES, duration, label } from '@/lib/format';
+import { RUN_STATUSES, duration, label, plural } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Section } from './Section';
 
@@ -33,30 +33,34 @@ export function LaunchCard({
   const defaults = useRunDefaults();
   const start = useStartRun();
   const [chosenDate, setCalcDate] = useState('');
-  const [allClients, setAllClients] = useState(true);
+  // все клиенты, по партиям (П1-1) или выбранные из списка
+  const [mode, setMode] = useState<'all' | 'batches' | 'list'>('all');
   const [selected, setSelected] = useState<string[]>([]);
+  const [selectedBatches, setSelectedBatches] = useState<string[]>([]);
+  const [batchFilter, setBatchFilter] = useState('');
   const [search, setSearch] = useState('');
 
   // по умолчанию - последняя дата данных (ПР-9, ЭП-1)
   const calcDate = chosenDate || defaults.data?.dataDate || '';
   const clients = defaults.data?.clients ?? [];
+  const batches = defaults.data?.batches ?? [];
+  const inBatch = batchFilter ? new Set(batches.find((batch) => batch.batchId === batchFilter)?.clientInns ?? []) : null;
   const needle = search.trim().toLowerCase();
-  const shown = needle
-    ? clients.filter((client) => (client.name ?? '').toLowerCase().includes(needle) || client.inn.includes(needle))
-    : clients;
+  const shown = clients
+    .filter((client) => !inBatch || inBatch.has(client.inn))
+    .filter((client) => !needle || (client.name ?? '').toLowerCase().includes(needle) || client.inn.includes(needle));
+  const batchInns = batches.filter((batch) => selectedBatches.includes(batch.batchId)).flatMap((batch) => batch.clientInns);
+  const clientInns = mode === 'all' ? null : mode === 'batches' ? batchInns : selected;
 
   const running = defaults.data?.runningRunId != null || start.isPending;
   const noData = defaults.isSuccess && !defaults.data.dataDate;
 
   const launch = () => {
-    start.mutate(
-      { clientInns: allClients ? null : selected, calcDate: calcDate || null },
-      { onSuccess: (result) => onStarted(result.runId) },
-    );
+    start.mutate({ clientInns, calcDate: calcDate || null }, { onSuccess: (result) => onStarted(result.runId) });
   };
 
   return (
-    <Section title={canOperate ? 'Запуск прогона' : 'Прогон'} requirement="ЭП-1">
+    <Section title={canOperate ? 'Запуск прогона' : 'Прогон'}>
       {canOperate && (
         <div className="flex flex-col gap-3">
           {/* поля не уже 16rem: если места не хватает, кнопка уходит под них, а не сжимает дату */}
@@ -68,10 +72,11 @@ export function LaunchCard({
               <select
                 id="launch-clients"
                 className={INPUT}
-                value={allClients ? 'all' : 'list'}
-                onChange={(event) => setAllClients(event.target.value === 'all')}
+                value={mode}
+                onChange={(event) => setMode(event.target.value as typeof mode)}
               >
                 <option value="all">все ({clients.length})</option>
+                {batches.length > 0 && <option value="batches">по партиям…</option>}
                 <option value="list">выбрать из списка…</option>
               </select>
               <label htmlFor="launch-date" className="text-muted-foreground">
@@ -92,15 +97,68 @@ export function LaunchCard({
               size="lg"
               className="h-auto min-h-16 px-6 text-base"
               onClick={launch}
-              disabled={running || noData || (!allClients && selected.length === 0)}
+              disabled={running || noData || (clientInns !== null && clientInns.length === 0)}
             >
               {running ? 'Прогон выполняется…' : 'Запустить прогон'}
             </Button>
           </div>
 
-          {!allClients && (
+          {mode === 'batches' && (
+            <fieldset className="flex flex-col gap-1 rounded-md border p-2 text-sm">
+              <legend className="px-1 text-xs text-muted-foreground">
+                Партии загруженных данных · выбрано клиентов {batchInns.length}
+              </legend>
+              {batches.map((batch) => (
+                <label key={batch.batchId} className="flex items-center gap-2 py-0.5">
+                  <input
+                    type="checkbox"
+                    aria-label={`Партия ${batch.batchId}`}
+                    checked={selectedBatches.includes(batch.batchId)}
+                    onChange={(event) =>
+                      setSelectedBatches((current) =>
+                        event.target.checked ? [...current, batch.batchId] : current.filter((id) => id !== batch.batchId),
+                      )
+                    }
+                  />
+                  <span className="font-medium">{batch.batchId}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {plural(batch.clientInns.length, ['клиент', 'клиента', 'клиентов'])}
+                  </span>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      setBatchFilter(batch.batchId);
+                      setMode('list');
+                    }}
+                  >
+                    клиенты партии
+                  </Button>
+                </label>
+              ))}
+            </fieldset>
+          )}
+
+          {mode === 'list' && (
             <div className="flex flex-col gap-2 rounded-md border p-2 text-sm">
               <div className="flex flex-wrap items-center gap-2">
+                {batches.length > 0 && (
+                  <select
+                    className={cn(INPUT, 'h-8 w-auto')}
+                    value={batchFilter}
+                    onChange={(event) => setBatchFilter(event.target.value)}
+                    aria-label="Партия"
+                  >
+                    <option value="">все партии</option>
+                    {batches.map((batch) => (
+                      <option key={batch.batchId} value={batch.batchId}>
+                        {batch.batchId}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <input
                   type="search"
                   className={cn(INPUT, 'h-8 min-w-48 flex-1')}
@@ -123,6 +181,7 @@ export function LaunchCard({
                   <label key={client.inn} className="flex items-center gap-2 py-0.5">
                     <input
                       type="checkbox"
+                      aria-label={`${client.name ?? ''} ${client.inn}`.trim()}
                       checked={selected.includes(client.inn)}
                       onChange={(event) =>
                         setSelected((current) =>

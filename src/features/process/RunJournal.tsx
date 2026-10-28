@@ -28,7 +28,7 @@ export function RunJournal({ run }: { run: Run }) {
     .map(([name, version]) => `${MODEL_TITLES[name] ?? name} ${version}`);
 
   return (
-    <Section title="Журнал и версии" requirement="ЭП-6">
+    <Section title="Журнал и версии">
       <p className="text-sm">{timeline.join(' · ')}</p>
       <p className="mt-2 text-sm">
         Версии: {[...versions, `дата данных ${date(run.dataDate)}`, `дата расчёта ${date(run.calcDate)}`].join(' · ')} · ошибок

@@ -9,7 +9,7 @@ export function RunHistory({ onSelect }: { onSelect: (runId: number) => void }) 
   const runs = useRuns();
 
   return (
-    <Section title="История прогонов" requirement="ЭП-8">
+    <Section title="История прогонов">
       {runs.data?.items.length === 0 && <p className="text-sm text-muted-foreground">Прогонов ещё не было.</p>}
       {runs.data && runs.data.items.length > 0 && (
         <Table>

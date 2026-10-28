@@ -1,32 +1,23 @@
 import type { Run } from '@/api/types';
 import { duration, minutesAsHours, plural } from '@/lib/format';
-import { Section } from './Section';
 
 const WORKDAY_MINUTES = 8 * 60;
 
-/** ЭП-9: время прогона и расчётное время ручной проработки тех же клиентов (допущение, Приложение А) */
+/**
+ * Справка про время (ЭП-9, П2-5.3): время прогона и расчётное время ручной проработки тех же клиентов - узкая строка
+ * внизу экрана. Время ручной работы - допущение команды (Приложение А).
+ */
 export function ManualComparison({ comparison }: { comparison: NonNullable<Run['comparison']> }) {
   const perClient = comparison.clients ? Math.round(comparison.manualMinutes / comparison.clients) : 0;
+  const clients = plural(comparison.clients, ['клиенту', 'клиентам', 'клиентам']);
   return (
-    <Section title="Сравнение с ручной работой" requirement="ЭП-9">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <div className="text-sm text-muted-foreground">
-            Прогон: {plural(comparison.clients, ['клиент', 'клиента', 'клиентов'])}
-          </div>
-          <div className="text-3xl font-bold text-success">{duration(comparison.runDurationMs)}</div>
-        </div>
-        <div>
-          <div className="text-sm text-muted-foreground">
-            Вручную: {plural(comparison.clients, ['клиент', 'клиента', 'клиентов'])} × {minutesAsHours(perClient)}
-          </div>
-          <div className="text-3xl font-bold text-amber-700 dark:text-amber-400">≈ {workdays(comparison.manualMinutes)}</div>
-        </div>
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground italic">
-        Время ручной проработки — допущение команды (Цели и метрики, Приложение А)
-      </p>
-    </Section>
+    <p className="rounded-md border bg-muted/40 px-4 py-2 text-[13px] text-muted-foreground" aria-label="Справка про время">
+      Справка: прогон по <b className="text-foreground">{clients}</b> занял{' '}
+      <b className="text-foreground">{duration(comparison.runDurationMs)}</b>. Вручную это{' '}
+      <b className="text-foreground">≈ {workdays(comparison.manualMinutes)}</b> (
+      {plural(comparison.clients, ['клиент', 'клиента', 'клиентов'])} × {minutesAsHours(perClient)}). Время ручной работы —
+      допущение команды (Цели и метрики, Приложение А).
+    </p>
   );
 }
 

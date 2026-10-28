@@ -43,6 +43,40 @@ describe('запуск прогона по выбранным клиентам',
     expect(calls.find((call) => call.method === 'POST')?.body).toMatchObject({ clientInns: ['0024194796', '7710000002'] });
   });
 
+  it('запуск по партиям: клиенты выбранных партий, переход к клиентам партии', async () => {
+    const calls = mockApi({
+      'GET /api/backend/runs/defaults': {
+        dataDate: '2025-12-30',
+        snapshotDate: '2025-12-30',
+        clients: [
+          { id: null, inn: '0024194796', name: 'Клиент 0005' },
+          { id: null, inn: '0035326483', name: 'Клиент 0009' },
+          { id: null, inn: '0101000001', name: 'Клиент 0101' },
+        ],
+        runningRunId: null,
+        batches: [
+          { batchId: 'batch_01', clientInns: ['0024194796', '0035326483'] },
+          { batchId: 'batch_02', clientInns: ['0101000001'] },
+        ],
+      },
+      'POST /api/backend/runs': { runId: 9 },
+    });
+    renderWithQuery(<LaunchCard run={undefined} canOperate onStarted={() => {}} />);
+
+    await screen.findByRole('option', { name: 'по партиям…' });
+    await userEvent.selectOptions(screen.getByLabelText('Клиенты'), 'batches');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Партия batch_01' }));
+    expect(screen.getByText(/выбрано клиентов 2/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Запустить прогон' }));
+    expect(calls.find((call) => call.method === 'POST')?.body).toMatchObject({ clientInns: ['0024194796', '0035326483'] });
+
+    // «клиенты партии» - список, отфильтрованный по партии
+    await userEvent.click(screen.getAllByRole('button', { name: 'клиенты партии' })[1]!);
+    expect(screen.getByLabelText('Партия')).toHaveValue('batch_02');
+    expect(screen.getByRole('checkbox', { name: 'Клиент 0101 0101000001' })).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Клиент 0005/ })).not.toBeInTheDocument();
+  });
+
   it('покупатель без наименования - только ИНН, без повтора', () => {
     expect(buyerTitle({ name: 'ИНН 6673189463', inn: '6673189463' })).toBe('ИНН 6673189463');
     expect(buyerTitle({ name: null, inn: '6673189463' })).toBe('ИНН 6673189463');

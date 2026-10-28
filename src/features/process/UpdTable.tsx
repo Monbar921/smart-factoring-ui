@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { type UpdFilter, useRunUpds, useUpdTrace } from '@/api/backend';
 import type { RunUpd } from '@/api/types';
 import { Badge } from '@/components/ui/badge';
@@ -17,18 +17,21 @@ export function UpdTable({
   enabled,
   filter,
   onFilter,
+  actions,
 }: {
   runId: number;
   enabled: boolean;
   filter: UpdFilter;
   onFilter: (filter: UpdFilter) => void;
+  /** кнопка «Свернуть» в заголовке */
+  actions?: ReactNode;
 }) {
   const upds = useRunUpds(runId, filter, enabled);
   const [traceId, setTraceId] = useState<number | null>(null);
   const pages = upds.data ? Math.max(1, Math.ceil(upds.data.total / upds.data.size)) : 1;
 
   return (
-    <Section title="Детализация по УПД" requirement="ЭП-5">
+    <Section title="Детализация по УПД" actions={actions}>
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <select
           className={SELECT}

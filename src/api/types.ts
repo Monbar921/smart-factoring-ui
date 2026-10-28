@@ -22,6 +22,8 @@ export interface RunDefaults {
   snapshotDate: string | null;
   clients: Ref[];
   runningRunId: number | null;
+  /** партии ручной загрузки с ИНН их клиентов (Р-62); у выгрузки генератора партий нет */
+  batches: { batchId: string; clientInns: string[] }[];
 }
 
 export interface RunStep {
@@ -160,6 +162,10 @@ export interface Offer {
   messageDraft: string | null;
   /** откуда тексты карточки (Р-58); null - предложение создано до того, как это стали хранить */
   textSource: TextSource | null;
+  /** вероятность задержки оплаты больше порога (последний прогон); null - модель задержки не применялась */
+  pDelay: number | null;
+  /** порог задержки прогона, дней: «оплатят позже срока больше чем на X дней» */
+  delayThresholdDays: number | null;
   queuedAt: string;
   lastRunId: number;
   revokeReason: string | null;

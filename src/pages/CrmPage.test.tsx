@@ -40,6 +40,8 @@ const OFFER: Offer = {
   decidedBy: null,
   decidedAt: null,
   textSource: 'LLM',
+  pDelay: 0.072,
+  delayThresholdDays: 14,
 };
 
 describe('CrmPage', () => {
@@ -90,7 +92,16 @@ describe('CrmPage', () => {
     expect(screen.getByText('Просрочка оплаты')).toBeInTheDocument();
 
     // Р-58: менеджер видит, откуда тексты карточки
-    expect(screen.getByText('тексты от LLM')).toBeInTheDocument();
+    expect(screen.getByText('составлено автоматически')).toBeInTheDocument();
+    // риск простым языком, без процента PD; задержка - «из 100»
+    expect(
+      screen.getByText('Риск покупателя: A, надёжный. Меньше 1 из 100 таких компаний за год не сможет расплатиться по долгам.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Задержка оплаты: из 100 таких счетов около 7 оплатят позже срока больше чем на 14 дней.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Доход банка, ₽')).toBeInTheDocument();
+    expect(screen.getByText('Ожидаемые потери, ₽')).toBeInTheDocument();
 
     // решение необратимо - сначала подтверждение; отмена ничего не отправляет
     await userEvent.click(screen.getByRole('button', { name: 'Передать в факторинг' }));
