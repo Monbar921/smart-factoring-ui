@@ -115,11 +115,14 @@ export function useUpdTrace(runId: number | null, updId: number | null) {
   });
 }
 
-export function useRunLog(runId: number | null, level: string, isRunning: boolean) {
+/** Журнал прогона по страницам: в большом прогоне тысячи записей */
+export const LOG_PAGE_SIZE = 300;
+
+export function useRunLog(runId: number | null, level: string, isRunning: boolean, page = 0) {
   const token = useToken();
   return useQuery({
-    queryKey: ['runs', runId, 'log', level],
-    queryFn: () => apiJson<Page<LogEntry>>(`${BASE}/runs/${runId}/log${query({ level, size: 300 })}`, token!),
+    queryKey: ['runs', runId, 'log', level, page],
+    queryFn: () => apiJson<Page<LogEntry>>(`${BASE}/runs/${runId}/log${query({ level, page, size: LOG_PAGE_SIZE })}`, token!),
     enabled: Boolean(token) && runId !== null,
     refetchInterval: isRunning ? RUN_POLL_MS : false,
   });

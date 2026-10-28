@@ -127,6 +127,21 @@ export const STEP_STATUSES: Record<string, string> = {
   STOPPED: 'Остановлен',
 };
 
+/** Откуда тексты карточки предложения (Р-58) */
+export const TEXT_SOURCES: Record<string, string> = {
+  LLM: 'от LLM',
+  CACHE: 'от LLM (из кеша)',
+  TEMPLATE: 'шаблоном',
+  FAILED: 'сбой LLM',
+};
+
+/** Покупатель одной строкой: «ООО Ромашка · ИНН …»; без наименования (в партиях ML-команды оно «ИНН …») - только ИНН */
+export function buyerTitle(buyer: { name: string | null; inn: string | null } | null | undefined): string {
+  if (!buyer) return '—';
+  if (!buyer.name || buyer.name.startsWith('ИНН ')) return `ИНН ${buyer.inn ?? ''}`.trim();
+  return buyer.inn ? `${buyer.name} · ИНН ${buyer.inn}` : buyer.name;
+}
+
 export const STOP_FACTORS: Record<string, string> = {
   BANKRUPTCY: 'Банкротство',
   LIQUIDATION: 'Ликвидация',

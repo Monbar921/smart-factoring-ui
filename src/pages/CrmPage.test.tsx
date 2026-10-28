@@ -39,6 +39,7 @@ const OFFER: Offer = {
   revokeReason: null,
   decidedBy: null,
   decidedAt: null,
+  textSource: 'LLM',
 };
 
 describe('CrmPage', () => {
@@ -88,7 +89,17 @@ describe('CrmPage', () => {
     expect(await screen.findByText('Карточка клиента: ООО «Альфа-Трейд»')).toBeInTheDocument();
     expect(screen.getByText('Просрочка оплаты')).toBeInTheDocument();
 
+    // Р-58: менеджер видит, откуда тексты карточки
+    expect(screen.getByText('тексты от LLM')).toBeInTheDocument();
+
+    // решение необратимо - сначала подтверждение; отмена ничего не отправляет
     await userEvent.click(screen.getByRole('button', { name: 'Передать в факторинг' }));
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('Передать УПД U-1004');
+    await userEvent.click(screen.getByRole('button', { name: 'Отмена' }));
+    expect(calls.some((call) => call.url.endsWith('/transfer'))).toBe(false);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Передать в факторинг' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Да, передать' }));
 
     expect(calls.some((call) => call.method === 'POST' && call.url === '/api/backend/offers/11/transfer')).toBe(true);
   });

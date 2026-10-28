@@ -5,6 +5,7 @@ import {
   CATEGORIES,
   REASONS,
   STEP_STATUSES,
+  TEXT_SOURCES,
   approxDuration,
   date,
   duration,
@@ -217,10 +218,18 @@ function stepSummary(stepNo: number, m: Metrics): string[] {
         `сумма ${moneyShort(num(m.eadTotal))}`,
         `доход банка ${moneyShort(num(m.incomeTotal))}`,
         `уведомлений ${num(m.newOfferNotifications)}`,
+        ...textsSummary(m.textsBySource),
       ];
     default:
       return [];
   }
+}
+
+/** Р-58: откуда тексты карточек - видно сразу, без раскрытия «все числа шага» */
+function textsSummary(value: unknown): string[] {
+  const items = entries(value).filter(([, count]) => count > 0);
+  if (items.length === 0) return [];
+  return [`тексты: ${items.map(([code, count]) => `${label(TEXT_SOURCES, code)} ${count}`).join(', ')}`];
 }
 
 /** Технические сбои шага - отдельной строкой, чтобы их не пропустить (статус «предупреждение», ПР-6) */
@@ -250,13 +259,6 @@ function StepMetrics({ stepNo, metrics }: { stepNo: number; metrics: Metrics }) 
     </dl>
   );
 }
-
-const TEXT_SOURCES: Record<string, string> = {
-  LLM: 'от LLM',
-  CACHE: 'из кеша',
-  TEMPLATE: 'шаблоном',
-  FAILED: 'сбой LLM',
-};
 
 function formatMetric(value: unknown, kind: MetricKind): string {
   if (value === null || value === undefined) return '—';

@@ -1,14 +1,14 @@
 import { Bell, Check, Copy, Send, ShieldAlert, X } from 'lucide-react';
 import { useState } from 'react';
 import { useClientCard, useManagers, useNotifications, useOfferDecision, useQueue } from '@/api/backend';
-import type { Offer } from '@/api/types';
+import type { CardUpd, Offer } from '@/api/types';
 import { ErrorNote, RiskBadge } from '@/components/StatusBadges';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { NOTIFICATION_TYPES, REASONS, date, dateTime, label, money, percent } from '@/lib/format';
+import { NOTIFICATION_TYPES, REASONS, TEXT_SOURCES, buyerTitle, date, dateTime, label, money, percent } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 /** Эмулятор CRM (ЭП-7): очередь предложений и карточка клиента так, как их получает CRM по API (п. 5.5) */
@@ -145,9 +145,11 @@ function OfferHint() {
 function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
   const decision = useOfferDecision();
   const [copied, setCopied] = useState(false);
+  // решение необратимо (предложение уходит из очереди, пакет - в ВТБ Факторинг): сначала подтверждение
+  const [confirming, setConfirming] = useState<'transfer' | 'reject' | null>(null);
 
   const decide = (action: 'transfer' | 'reject') =>
-    decision.mutate({ offerId: offer.offerId, action }, { onSuccess: () => onDone() });
+    decision.mutate({ offerId: offer.offerId, action }, { onSuccess: () => onDone(), onSettled: () => setConfirming(null) });
 
   return (
     <Card className="gap-4 py-5" aria-label="Карточка предложения">
@@ -155,9 +157,7 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
         <CardTitle className="text-base">
           {offer.client.name}: УПД {offer.updNumber} от {date(offer.updDate)}
         </CardTitle>
-        <CardDescription>
-          Покупатель {offer.buyer.name} · ИНН {offer.buyer.inn}
-        </CardDescription>
+        <CardDescription>Покупатель {buyerTitle(offer.buyer)}</CardDescription>
         <OfferFlags offer={offer} />
       </CardHeader>
       <CardContent className="flex flex-col gap-4 px-5 text-sm">
@@ -181,7 +181,14 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
         </dl>
 
         <section>
-          <h4 className="mb-1 font-medium">Причины оценки</h4>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <h4 className="font-medium">Причины оценки</h4>
+            {offer.textSource && (
+              <Badge variant={offer.textSource === 'FAILED' ? 'destructive' : 'secondary'} title="Откуда тексты карточки">
+                тексты {label(TEXT_SOURCES, offer.textSource)}
+              </Badge>
+            )}
+          </div>
           {offer.reasonsText && <p className="mb-2">{offer.reasonsText}</p>}
           <ul className="flex flex-col gap-1 text-xs">
             {offer.reasons?.map((reason) => (
@@ -220,16 +227,39 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
           )}
         </section>
 
-        <div className="flex gap-2">
-          <Button className="flex-1" onClick={() => decide('transfer')} disabled={decision.isPending}>
-            <Send aria-hidden />
-            Передать в факторинг
-          </Button>
-          <Button variant="outline" onClick={() => decide('reject')} disabled={decision.isPending}>
-            <X aria-hidden />
-            Отклонить
-          </Button>
-        </div>
+        {confirming === null ? (
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={() => setConfirming('transfer')} disabled={decision.isPending}>
+              <Send aria-hidden />
+              Передать в факторинг
+            </Button>
+            <Button variant="outline" onClick={() => setConfirming('reject')} disabled={decision.isPending}>
+              <X aria-hidden />
+              Отклонить
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 rounded-md border border-primary/40 bg-primary/5 p-3" role="alertdialog">
+            <p>
+              {confirming === 'transfer'
+                ? `Передать УПД ${offer.updNumber} на ${money(offer.ead)} в ВТБ Факторинг? Решение нельзя отменить.`
+                : `Отклонить предложение по УПД ${offer.updNumber}? Оно уйдёт из очереди и больше не будет предложено.`}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                variant={confirming === 'transfer' ? 'default' : 'destructive'}
+                onClick={() => decide(confirming)}
+                disabled={decision.isPending}
+              >
+                {confirming === 'transfer' ? 'Да, передать' : 'Да, отклонить'}
+              </Button>
+              <Button variant="outline" onClick={() => setConfirming(null)} disabled={decision.isPending}>
+                Отмена
+              </Button>
+            </div>
+          </div>
+        )}
         <ErrorNote error={decision.error} />
       </CardContent>
     </Card>
@@ -272,6 +302,13 @@ function Notifications({ managerId }: { managerId: number | null }) {
       </CardContent>
     </Card>
   );
+}
+
+/** Без открытого предложения: решение менеджера по УПД, если оно было, иначе причина последнего прогона */
+function noOffer(upd: CardUpd): string {
+  if (upd.offerStatus === 'TRANSFERRED') return 'передан в факторинг';
+  if (upd.offerStatus === 'REJECTED') return 'отклонён менеджером';
+  return label(REASONS, upd.noOfferReason);
 }
 
 /** Карточка клиента (п. 5.5) */
@@ -328,7 +365,7 @@ function ClientCardView({ clientId, onSelectOffer }: { clientId: number; onSelec
                       открыть
                     </Button>
                   ) : (
-                    <span className="text-xs">{label(REASONS, upd.noOfferReason)}</span>
+                    <span className="text-xs">{noOffer(upd)}</span>
                   )}
                 </TableCell>
               </TableRow>

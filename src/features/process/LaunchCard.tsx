@@ -35,10 +35,15 @@ export function LaunchCard({
   const [chosenDate, setCalcDate] = useState('');
   const [allClients, setAllClients] = useState(true);
   const [selected, setSelected] = useState<string[]>([]);
+  const [search, setSearch] = useState('');
 
   // по умолчанию - последняя дата данных (ПР-9, ЭП-1)
   const calcDate = chosenDate || defaults.data?.dataDate || '';
   const clients = defaults.data?.clients ?? [];
+  const needle = search.trim().toLowerCase();
+  const shown = needle
+    ? clients.filter((client) => (client.name ?? '').toLowerCase().includes(needle) || client.inn.includes(needle))
+    : clients;
 
   const running = defaults.data?.runningRunId != null || start.isPending;
   const noData = defaults.isSuccess && !defaults.data.dataDate;
@@ -94,22 +99,43 @@ export function LaunchCard({
           </div>
 
           {!allClients && (
-            <div className="max-h-48 overflow-y-auto rounded-md border p-2 text-sm">
-              {clients.map((client) => (
-                <label key={client.inn} className="flex items-center gap-2 py-0.5">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(client.inn)}
-                    onChange={(event) =>
-                      setSelected((current) =>
-                        event.target.checked ? [...current, client.inn] : current.filter((inn) => inn !== client.inn),
-                      )
-                    }
-                  />
-                  <span className="truncate">{client.name}</span>
-                  <span className="ml-auto font-mono text-xs text-muted-foreground">{client.inn}</span>
-                </label>
-              ))}
+            <div className="flex flex-col gap-2 rounded-md border p-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="search"
+                  className={cn(INPUT, 'h-8 min-w-48 flex-1')}
+                  placeholder="Поиск по названию или ИНН"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  aria-label="Поиск клиента"
+                />
+                <span className="text-xs text-muted-foreground" aria-live="polite">
+                  выбрано {selected.length} из {clients.length}
+                </span>
+                {selected.length > 0 && (
+                  <Button variant="ghost" size="sm" className="h-8" onClick={() => setSelected([])}>
+                    Сбросить
+                  </Button>
+                )}
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {shown.map((client) => (
+                  <label key={client.inn} className="flex items-center gap-2 py-0.5">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(client.inn)}
+                      onChange={(event) =>
+                        setSelected((current) =>
+                          event.target.checked ? [...current, client.inn] : current.filter((inn) => inn !== client.inn),
+                        )
+                      }
+                    />
+                    <span className="truncate">{client.name}</span>
+                    <span className="ml-auto font-mono text-xs text-muted-foreground">{client.inn}</span>
+                  </label>
+                ))}
+                {shown.length === 0 && <p className="py-1 text-muted-foreground">Никого не нашлось</p>}
+              </div>
             </div>
           )}
           {noData && (

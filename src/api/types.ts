@@ -158,6 +158,8 @@ export interface Offer {
   reasons: Reason[] | null;
   reasonsText: string | null;
   messageDraft: string | null;
+  /** откуда тексты карточки (Р-58); null - предложение создано до того, как это стали хранить */
+  textSource: TextSource | null;
   queuedAt: string;
   lastRunId: number;
   revokeReason: string | null;
@@ -204,7 +206,11 @@ export interface CardUpd {
   reasons: Reason[] | null;
   offerId: number | null;
   noOfferReason: string | null;
+  /** статус последнего предложения по УПД: QUEUED, TRANSFERRED, REJECTED; null - предложения не было */
+  offerStatus: string | null;
 }
+
+export type TextSource = 'LLM' | 'CACHE' | 'TEMPLATE' | 'FAILED';
 
 export interface ClientCard {
   client: Ref;
