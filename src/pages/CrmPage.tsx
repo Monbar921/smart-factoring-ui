@@ -1,6 +1,6 @@
 import { Bell, Check, Copy, Send, ShieldAlert, X } from 'lucide-react';
 import { useState } from 'react';
-import { useClientCard, useManagers, useNotifications, useOfferDecision, useQueue } from '@/api/backend';
+import { useClientCard, useManagers, useNotifications, useOfferDecision, useParameters, useQueue } from '@/api/backend';
 import type { CardUpd, Offer, RiskLevel } from '@/api/types';
 import { HelpButton, Hint } from '@/components/Hint';
 import { ErrorNote, RiskBadge } from '@/components/StatusBadges';
@@ -21,7 +21,16 @@ import {
   percent,
   updLabel,
 } from '@/lib/format';
-import { RISK_HELP_INTRO, RISK_HELP_TITLE, RISK_SCALE, buyerRiskSentence, delaySentence, outOf100 } from '@/lib/risk';
+import {
+  RISK_HELP_INTRO,
+  RISK_HELP_TITLE,
+  RISK_SCALE,
+  buyerRiskSentence,
+  delaySentence,
+  outOf100,
+  riskBoundsOf,
+  riskScaleText,
+} from '@/lib/risk';
 import { cn } from '@/lib/utils';
 
 /** Эмулятор CRM (ЭП-7): очередь предложений и карточка клиента так, как их получает CRM по API (п. 5.5) */
@@ -206,6 +215,7 @@ function OfferFlags({ offer }: { offer: Offer }) {
 
 /** Справка «Что значат уровни риска» (П2-1.4) - шкала, одинаковая на всех экранах */
 function RiskScaleHelp() {
+  const bounds = riskBoundsOf(useParameters().data);
   return (
     <>
       <span className="mb-2 block">{RISK_HELP_INTRO}</span>
@@ -213,7 +223,7 @@ function RiskScaleHelp() {
         <span key={level} className="mb-1 flex items-start gap-2">
           <RiskBadge level={level} />
           <span>
-            <span className="font-medium">{RISK_SCALE[level].title}.</span> {RISK_SCALE[level].text}
+            <span className="font-medium">{RISK_SCALE[level].title}.</span> {riskScaleText(level, bounds)}
           </span>
         </span>
       ))}

@@ -36,6 +36,17 @@ function query(params: Record<string, string | number | null | undefined>) {
 
 // ------------------------------------------------------------------ экран процесса
 
+/** Параметры системы (Приложение А): пороги уровней риска для справки и т. п. Меняются редко - кеш на сессию */
+export function useParameters() {
+  const token = useToken();
+  return useQuery({
+    queryKey: ['parameters'],
+    queryFn: () => apiJson<{ code: string; value: string }[]>(`${BASE}/parameters`, token!),
+    enabled: Boolean(token),
+    staleTime: Infinity,
+  });
+}
+
 export function useRunDefaults() {
   const token = useToken();
   return useQuery({
