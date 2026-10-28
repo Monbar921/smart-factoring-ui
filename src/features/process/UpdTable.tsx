@@ -15,6 +15,7 @@ import {
   label,
   lowerFirst,
   moneyShort,
+  pdPercent,
   percent,
   updLabel,
 } from '@/lib/format';
@@ -166,7 +167,7 @@ export function UpdTable({
 function pdAndLevel(upd: RunUpd): string {
   if (upd.reason === 'STOP_FACTOR') return 'стоп-фактор';
   if (upd.pd === null) return '—';
-  return upd.riskLevel ? `${percent(upd.pd)} · ${upd.riskLevel}` : percent(upd.pd);
+  return upd.riskLevel ? `${pdPercent(upd.pd)} · ${upd.riskLevel}` : pdPercent(upd.pd);
 }
 
 /** «Решение и причина» одной фразой, как на макете */
