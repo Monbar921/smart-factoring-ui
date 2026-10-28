@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { LOG_PAGE_SIZE, useRunLog } from '@/api/backend';
 import { Button } from '@/components/ui/button';
-import { dateTime } from '@/lib/format';
+import { LOG_EVENTS, dateTime, label } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 const LEVELS = [
@@ -54,7 +54,10 @@ export function RunLog({ runId, isRunning }: { runId: number; isRunning: boolean
             <span className="text-muted-foreground">{dateTime(entry.loggedAt)}</span>
             <span>{entry.stepNo ? `шаг ${entry.stepNo}` : ''}</span>
             <span>
-              <span className="font-semibold">{entry.eventCode}</span> {entry.message}
+              <span className="font-semibold" title={entry.eventCode}>
+                {label(LOG_EVENTS, entry.eventCode)}:
+              </span>{' '}
+              {entry.message}
             </span>
           </li>
         ))}

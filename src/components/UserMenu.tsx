@@ -30,7 +30,7 @@ export function UserMenu() {
   const profile = auth.user?.profile;
   const name = guest ? 'Гость (демо)' : profile?.name || profile?.preferred_username || 'Пользователь';
   const initials = name
-    .split(/[\s._-]+/)
+    .split(/[^\p{L}\p{N}]+/u)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]!.toUpperCase())

@@ -5,7 +5,19 @@ import type { RunUpd } from '@/api/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CATEGORIES, PAYMENT_STATUSES, REASONS, dateTime, label, lowerFirst, moneyShort, percent } from '@/lib/format';
+import {
+  CATEGORIES,
+  FUNNEL_STAGES,
+  LOG_EVENTS,
+  PAYMENT_STATUSES,
+  REASONS,
+  dateTime,
+  label,
+  lowerFirst,
+  moneyShort,
+  percent,
+  updLabel,
+} from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Section } from './Section';
 
@@ -74,7 +86,7 @@ export function UpdTable({
         </select>
         {filter.stage && (
           <Badge variant="outline" className="gap-1">
-            ступень {filter.stage}
+            {label(FUNNEL_STAGES, filter.stage)}
             <button
               type="button"
               aria-label="Сбросить ступень"
@@ -174,7 +186,7 @@ function UpdTrace({ runId, updId, onClose }: { runId: number; updId: number; onC
     <section className="mt-4 rounded-lg border bg-muted/30 p-4" aria-label="Путь УПД">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-medium">
-          Путь УПД {trace.data?.upd.number} · {trace.data?.upd.client.name} →{' '}
+          Путь {updLabel(trace.data?.upd.number)} · {trace.data?.upd.client.name} →{' '}
           {trace.data?.upd.buyer.name ?? trace.data?.upd.buyer.inn}
         </h3>
         <Button variant="ghost" size="sm" onClick={onClose} aria-label="Закрыть путь УПД">
@@ -206,7 +218,8 @@ function UpdTrace({ runId, updId, onClose }: { runId: number; updId: number; onC
                 entry.level === 'WARN' && 'text-amber-700 dark:text-amber-400',
               )}
             >
-              {dateTime(entry.loggedAt)} · {entry.eventCode} · {entry.message}
+              {dateTime(entry.loggedAt)} · <span title={entry.eventCode}>{label(LOG_EVENTS, entry.eventCode)}</span> ·{' '}
+              {entry.message}
             </li>
           ))}
         </ul>

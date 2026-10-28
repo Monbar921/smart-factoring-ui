@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { buyerTitle } from '@/lib/format';
+import { buyerTitle, updLabel } from '@/lib/format';
 import { mockApi } from '@/test/mockApi';
 import { renderWithQuery } from '@/test/render';
 import { LaunchCard } from './LaunchCard';
@@ -31,7 +31,8 @@ describe('запуск прогона по выбранным клиентам',
 
     await userEvent.type(screen.getByLabelText('Поиск клиента'), '0024');
     expect(screen.queryByText('АО «Бета»')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('checkbox'));
+    // у чекбокса есть имя - клиент и ИНН (доступность)
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Клиент 0005 0024194796' }));
     expect(screen.getByText('выбрано 1 из 3')).toBeInTheDocument();
 
     await userEvent.clear(screen.getByLabelText('Поиск клиента'));
@@ -81,5 +82,10 @@ describe('запуск прогона по выбранным клиентам',
     expect(buyerTitle({ name: 'ИНН 6673189463', inn: '6673189463' })).toBe('ИНН 6673189463');
     expect(buyerTitle({ name: null, inn: '6673189463' })).toBe('ИНН 6673189463');
     expect(buyerTitle({ name: 'ООО «Гамма»', inn: '7700000003' })).toBe('ООО «Гамма» · ИНН 7700000003');
+  });
+
+  it('номер УПД со словом «УПД» - без повтора', () => {
+    expect(updLabel('U-1004')).toBe('УПД U-1004');
+    expect(updLabel('УПД-0255')).toBe('УПД-0255');
   });
 });
