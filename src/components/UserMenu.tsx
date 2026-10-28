@@ -1,6 +1,7 @@
 import { LogOut, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from 'react-oidc-context';
+import { stopGuest, useGuestToken } from '@/auth/guest';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +15,7 @@ import {
 
 export function UserMenu() {
   const auth = useAuth();
+  const guest = useGuestToken() !== null;
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
   const toggleTheme = () => {
     const next = !dark;
@@ -26,7 +28,7 @@ export function UserMenu() {
     setDark(next);
   };
   const profile = auth.user?.profile;
-  const name = profile?.name || profile?.preferred_username || 'Пользователь';
+  const name = guest ? 'Гость (демо)' : profile?.name || profile?.preferred_username || 'Пользователь';
   const initials = name
     .split(/[\s._-]+/)
     .filter(Boolean)
@@ -47,14 +49,16 @@ export function UserMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <span className="block truncate">{name}</span>
-          {profile?.email && <span className="block truncate text-xs font-normal text-muted-foreground">{profile.email}</span>}
+          {!guest && profile?.email && (
+            <span className="block truncate text-xs font-normal text-muted-foreground">{profile.email}</span>
+          )}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={toggleTheme}>
           {dark ? <Sun /> : <Moon />}
           {dark ? 'Светлая тема' : 'Тёмная тема'}
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => void auth.signoutRedirect()}>
+        <DropdownMenuItem onSelect={() => (guest ? stopGuest() : void auth.signoutRedirect())}>
           <LogOut />
           Выйти
         </DropdownMenuItem>

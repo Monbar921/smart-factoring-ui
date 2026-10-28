@@ -1,4 +1,4 @@
-import { useAuth } from 'react-oidc-context';
+import { useAccessToken } from '@/auth/guest';
 
 export interface Roles {
   /** экран процесса: импорт данных ручной загрузки и запуск прогона */
@@ -17,7 +17,7 @@ export function rolesOf(accessToken: string | undefined): Roles {
 }
 
 export function useRoles(): Roles {
-  return rolesOf(useAuth().user?.access_token);
+  return rolesOf(useAccessToken());
 }
 
 function realmRoles(accessToken: string | undefined): string[] {

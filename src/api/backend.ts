@@ -1,5 +1,5 @@
+import { useAccessToken } from '@/auth/guest';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from 'react-oidc-context';
 import { apiFetch, apiJson } from './client';
 import type {
   ClientCard,
@@ -22,7 +22,7 @@ const BASE = '/api/backend';
 const RUN_POLL_MS = 2000;
 
 function useToken() {
-  return useAuth().user?.access_token;
+  return useAccessToken();
 }
 
 function query(params: Record<string, string | number | null | undefined>) {

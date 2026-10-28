@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from 'react-oidc-context';
+import { useAccessToken } from '@/auth/guest';
 import { apiFetch } from './client';
 
 export interface HelloResult {
@@ -18,7 +18,7 @@ export async function getHello(token: string): Promise<HelloResult> {
 
 /** Проверка связи UI -> gateway -> backend */
 export function useHello() {
-  const token = useAuth().user?.access_token;
+  const token = useAccessToken();
   return useQuery({
     queryKey: ['maintenance', 'hello'],
     queryFn: () => getHello(token!),

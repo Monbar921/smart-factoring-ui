@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from 'react-oidc-context';
+import { useGuestToken } from '@/auth/guest';
 import { oidcConfig } from '@/auth/oidc';
 import { Skeleton } from '@/components/ui/skeleton';
 import { HomePage } from '@/pages/HomePage';
@@ -26,6 +27,8 @@ export function App() {
 
 function AuthGate() {
   const auth = useAuth();
+  // гость «Запуск демо» входит без Keycloak-сессии в браузере: токен ему выдаёт gateway
+  const guest = useGuestToken();
 
   // разбор ответа Keycloak после редиректа или восстановление сессии из sessionStorage
   if (auth.isLoading) {
@@ -35,5 +38,5 @@ function AuthGate() {
       </div>
     );
   }
-  return auth.isAuthenticated ? <HomePage /> : <LoginPage />;
+  return auth.isAuthenticated || guest ? <HomePage /> : <LoginPage />;
 }
