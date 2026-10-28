@@ -7,6 +7,7 @@
 #   KEYCLOAK_URL        - публичный адрес Keycloak (его открывает браузер), например http://203.0.113.10:8180
 #   KEYCLOAK_REALM      - realm стенда, например smart-factoring-test
 #   KEYCLOAK_CLIENT_ID  - публичный клиент UI в realm, по умолчанию smart-factoring-ui
+#   GUEST_LOGIN         - true: на странице входа кнопка «Запуск демо» (гостевой вход через gateway), по умолчанию false
 FROM nginxinc/nginx-unprivileged:1.29-alpine
 
 ENV SERVER_PORT=8080 \

@@ -2,15 +2,16 @@ import type { ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-/** Блок экрана процесса как на макете рис. 4 BRD: заголовок слева, ссылка на требование (ЭП-n) справа */
+/** Блок экрана процесса как на макете рис. 4 BRD: заголовок и содержимое (теги требований ЭП-n на экране не показываются) */
 export function Section({
   title,
-  requirement,
+  actions,
   children,
   className,
 }: {
   title: ReactNode;
-  requirement: string;
+  /** элементы справа от заголовка (например, кнопка раскрытия) */
+  actions?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -18,7 +19,7 @@ export function Section({
     <Card className={cn('gap-3 py-4', className)}>
       <CardHeader className="flex flex-row items-baseline justify-between gap-3 px-5">
         <CardTitle className="text-base font-semibold">{title}</CardTitle>
-        <span className="shrink-0 text-xs text-muted-foreground">{requirement}</span>
+        {actions}
       </CardHeader>
       <CardContent className="px-5">{children}</CardContent>
     </Card>

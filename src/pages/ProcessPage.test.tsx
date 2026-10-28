@@ -103,10 +103,10 @@ function routes() {
     },
     'GET /api/backend/runs/7': RUN,
     'GET /api/backend/runs/7/funnel': [
-      { code: 'OPEN', title: 'Открытые УПД', count: 28, amount: 1, dropped: [] },
+      { code: 'OPEN', title: 'Все неоплаченные счета', count: 28, amount: 1, dropped: [] },
       {
         code: 'NO_STOP_FACTOR',
-        title: 'Без стоп-факторов',
+        title: 'У покупателя нет стоп-факторов',
         count: 22,
         amount: 1,
         dropped: [{ reason: 'STOP_FACTOR', count: 2, amount: 5500000 }],
@@ -151,11 +151,19 @@ describe('ProcessPage', () => {
     expect(within(step4).getByText('Предупреждение')).toBeInTheDocument();
     expect(within(step4).getByText('ошибок оценки: 1')).toBeInTheDocument();
     expect(within(screen.getByTestId('step-5')).getByText(/с предложением 12/)).toBeInTheDocument();
-    // ЭП-4: причина отсева справа от ступени
-    expect(await screen.findByRole('button', { name: 'стоп-фактор' })).toBeInTheDocument();
-    expect(screen.getByText(/−2/)).toBeInTheDocument();
-    // ЭП-9 и ЭП-6
-    expect(screen.getByText('≈ 2,5 рабочего дня')).toBeInTheDocument();
+    // воронка (Funnel_Screen_Requirements.md): ушедшие по причине - числом и текстом, итог в процентах
+    expect(await screen.findByRole('button', { name: /Ушло 2 · У покупателя есть стоп-фактор/ })).toBeInTheDocument();
+    expect(screen.getByText(/Это 79% от всех/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Открыть очередь' })).toBeInTheDocument();
+    // портфель под воронкой - из итогов шага 5
+    expect(screen.getByText('Сделок можно заключить')).toBeInTheDocument();
+    // детализация свёрнута, клик по причине воронки раскрывает её
+    expect(screen.queryByLabelText('Решение')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Ушло 2 · У покупателя есть стоп-фактор/ }));
+    expect(await screen.findByLabelText('Решение')).toBeInTheDocument();
+    // справка про время внизу и журнал; тегов требований (ЭП-n) на экране нет
+    expect(screen.getByLabelText('Справка про время')).toHaveTextContent('≈ 2,5 рабочего дня');
+    expect(screen.queryByText(/ЭП-\d/)).not.toBeInTheDocument();
     expect(screen.getByText(/запуск прогона № 7 \(operator\)/)).toBeInTheDocument();
     expect(screen.getByText(/модель PD pd-stub-1/)).toBeInTheDocument();
   });

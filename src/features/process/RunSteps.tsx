@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Circle, CircleX, LoaderCircle, TriangleAlert } from 'lucide-react';
-import type { Run, RunStep, StepProgress, StepStatus } from '@/api/types';
+import type { RiskLevel, Run, RunStep, StepProgress, StepStatus } from '@/api/types';
+import { RISK_SCALE } from '@/lib/risk';
 import {
   CATEGORIES,
   REASONS,
@@ -60,7 +61,7 @@ const STEP_METRICS: Record<number, [string, string, MetricKind][]> = {
     ['queuedOffers', 'В очередях менеджеров', 'count'],
     ['eadTotal', 'Сумма финансирования', 'money'],
     ['incomeTotal', 'Доход банка', 'money'],
-    ['expectedAccepted', 'Ожидаемо принятых (Σ TR)', 'fraction'],
+    ['expectedAccepted', 'Ожидаемо согласятся (сумма шансов согласия)', 'fraction'],
     ['newOfferNotifications', 'Уведомлений о новых', 'count'],
     ['revokedOffers', 'Отозвано', 'count'],
     ['withoutMessageDraft', 'Без черновика (сбой LLM)', 'count'],
@@ -70,14 +71,16 @@ const STEP_METRICS: Record<number, [string, string, MetricKind][]> = {
 /** ЭП-2, ЭП-3: пять шагов прогона со статусом, временем и строкой-итогом, как на макете рис. 4 BRD */
 export function RunSteps({ run }: { run: Run }) {
   return (
-    <Section title="Ход прогона и результат шагов" requirement="ЭП-2, ЭП-3">
+    <Section title="Ход прогона и результат шагов">
       {run.errorMessage && <p className="mb-2 text-sm text-destructive">{run.errorMessage}</p>}
       <ol className="flex flex-col gap-2.5">
         {run.steps.map((step) => (
           <StepItem key={step.stepNo} step={step} />
         ))}
       </ol>
-      <p className="mt-3 text-xs text-muted-foreground italic">Блок 6 — после прогона, по кнопкам менеджера (ЭП-7)</p>
+      <p className="mt-3 text-xs text-muted-foreground italic">
+        Решения по предложениям менеджер принимает после прогона, в эмуляторе CRM
+      </p>
     </Section>
   );
 }
@@ -207,7 +210,7 @@ function stepSummary(stepNo: number, m: Metrics): string[] {
         `стоп-факторы: ${plural(num(m.stopFactorBuyers), ['покупатель', 'покупателя', 'покупателей'])}`,
         `без истории оплат: ${num(m.noPaymentHistoryBuyers)}`,
         `«мало данных»: ${num(m.lowDataBuyers)}`,
-        `уровни A / B / C / D: ${['A', 'B', 'C', 'D'].map((level) => levels[level] ?? 0).join(' / ')}`,
+        `уровни: ${(['A', 'B', 'C', 'D'] as const).map((level) => `${level} ${RISK_SCALE[level].word} ${levels[level] ?? 0}`).join(' · ')}`,
         `вероятная задержка: ${num(m.delayProbableUpds)} УПД`,
       ];
     }
@@ -253,7 +256,11 @@ function StepMetrics({ stepNo, metrics }: { stepNo: number; metrics: Metrics }) 
         value={metrics.byCategory}
         labelOf={(code) => `${code}: ${CATEGORIES[Number(code)] ?? ''}`}
       />
-      <NestedMetric title="Уровни риска" value={metrics.buyersByRiskLevel} />
+      <NestedMetric
+        title="Уровни риска покупателей"
+        value={metrics.buyersByRiskLevel}
+        labelOf={(code) => `${code} — ${RISK_SCALE[code as RiskLevel]?.title ?? code}`}
+      />
       <NestedMetric title="Причины отказа" value={metrics.noOfferByReason} labelOf={(code) => label(REASONS, code)} />
       <NestedMetric title="Тексты карточек" value={metrics.textsBySource} labelOf={(code) => label(TEXT_SOURCES, code)} />
     </dl>

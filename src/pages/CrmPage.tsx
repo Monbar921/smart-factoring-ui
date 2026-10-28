@@ -1,25 +1,16 @@
 import { Bell, Check, Copy, Send, ShieldAlert, X } from 'lucide-react';
 import { useState } from 'react';
 import { useClientCard, useManagers, useNotifications, useOfferDecision, useQueue } from '@/api/backend';
-import type { CardUpd, Offer } from '@/api/types';
+import type { CardUpd, Offer, RiskLevel } from '@/api/types';
+import { HelpButton, Hint } from '@/components/Hint';
 import { ErrorNote, RiskBadge } from '@/components/StatusBadges';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {
-  NOTIFICATION_TYPES,
-  REASONS,
-  TEXT_SOURCES,
-  buyerTitle,
-  date,
-  dateTime,
-  label,
-  money,
-  percent,
-  updLabel,
-} from '@/lib/format';
+import { NOTIFICATION_TYPES, REASONS, TEXT_SOURCES, buyerTitle, date, dateTime, label, money, percent } from '@/lib/format';
+import { RISK_HELP_INTRO, RISK_HELP_TITLE, RISK_SCALE, buyerRiskSentence, delaySentence } from '@/lib/risk';
 import { cn } from '@/lib/utils';
 
 /** Эмулятор CRM (ЭП-7): очередь предложений и карточка клиента так, как их получает CRM по API (п. 5.5) */
@@ -62,19 +53,53 @@ export function CrmPage() {
         <div className="flex min-w-0 flex-col gap-6">
           <Card className="gap-3 py-5">
             <CardHeader className="px-5">
-              <CardTitle className="text-base">Очередь предложений</CardTitle>
-              <CardDescription>По убыванию ранга: TR × доход банка (п. 5.3)</CardDescription>
+              <CardTitle className="text-base">Очередь предложений для клиентов на обработку</CardTitle>
+              <CardDescription>
+                Сверху те предложения, которые вероятнее всего принесут больше дохода. Ожидаемый доход равен доходу банка,
+                умноженному на вероятность, что клиент согласится.
+              </CardDescription>
             </CardHeader>
             <CardContent className="px-3">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Клиент</TableHead>
-                    <TableHead>УПД и покупатель</TableHead>
-                    <TableHead className="text-right">Сумма</TableHead>
-                    <TableHead className="text-right">Цена</TableHead>
-                    <TableHead className="text-right">Срок</TableHead>
-                    <TableHead>Риск</TableHead>
+                    <TableHead>
+                      <Hint text="УПД — документ об отгрузке, по которому покупатель ещё должен заплатить.">
+                        УПД и покупатель
+                      </Hint>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <Hint text="Столько банк выплатит клиенту сразу. Это часть суммы УПД: чем надёжнее покупатель, тем доля больше (уровень A — 90%, B — 85%, C — 75%).">
+                        Сумма финансирования, ₽
+                      </Hint>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <Hint text="Столько клиент заплатит банку за весь срок одной суммой, не ежемесячно. Проценты годовых — то же самое в пересчёте на год.">
+                        Стоимость факторинга
+                      </Hint>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <Hint text="Сколько дней банк ждёт деньги от покупателя: дни до плановой оплаты плюс ожидаемая задержка.">
+                        Срок финансирования, дн.
+                      </Hint>
+                    </TableHead>
+                    <TableHead>
+                      <span className="inline-flex items-center gap-1">
+                        Риск покупателя
+                        <HelpButton title={RISK_HELP_TITLE}>
+                          <RiskScaleHelp />
+                        </HelpButton>
+                      </span>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <Hint
+                        text="Шанс согласия сейчас оценивается правилом: базово 7%, увеличивается, если у клиента мало денег на счёте или отсрочка по договору 60 дней и больше."
+                        align="end"
+                      >
+                        Ожидаемый доход, ₽
+                      </Hint>
+                    </TableHead>
                     <TableHead>Пометки</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -90,8 +115,10 @@ export function CrmPage() {
                     >
                       <TableCell className="max-w-44 truncate">{item.client.name}</TableCell>
                       <TableCell>
-                        <div className="font-medium">{item.updNumber}</div>
-                        <div className="max-w-56 truncate text-xs text-muted-foreground">{item.buyer.name}</div>
+                        <div className="font-medium">
+                          {item.updNumber} <span className="font-normal text-muted-foreground">от {date(item.updDate)}</span>
+                        </div>
+                        <div className="max-w-56 truncate text-xs text-muted-foreground">{buyerTitle(item.buyer)}</div>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{money(item.ead)}</TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -99,8 +126,16 @@ export function CrmPage() {
                         <div className="text-xs text-muted-foreground">{percent(item.priceRate)} год.</div>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{item.termDays} дн.</TableCell>
-                      <TableCell>
-                        <RiskBadge level={item.riskLevel} />
+                      <TableCell className="whitespace-nowrap">
+                        <RiskBadge level={item.riskLevel} /> <span className="text-xs">{RISK_SCALE[item.riskLevel].word}</span>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        <Hint
+                          align="end"
+                          text={`Доход банка ${money(item.income)} × шанс, что клиент согласится, ${percent(item.tr)}`}
+                        >
+                          {money(item.rank)}
+                        </Hint>
                       </TableCell>
                       <TableCell>
                         <OfferFlags offer={item} />
@@ -134,11 +169,44 @@ export function CrmPage() {
 function OfferFlags({ offer }: { offer: Offer }) {
   return (
     <div className="flex flex-wrap gap-1">
-      {offer.flags.isNew && <Badge className="bg-primary/10 text-primary">новое</Badge>}
-      {offer.flags.delayProbable && <Badge variant="outline">вероятна задержка</Badge>}
-      {offer.flags.lowData && <Badge variant="outline">мало данных</Badge>}
-      {offer.flags.reducedToLimit && <Badge variant="outline">до остатка лимита</Badge>}
+      {offer.flags.isNew && (
+        <Hint text="Предложение появилось в последнем прогоне.">
+          <Badge className="bg-primary/10 text-primary">новое</Badge>
+        </Hint>
+      )}
+      {offer.flags.delayProbable && (
+        <Hint text="Модель задержки оценила, что покупатель, скорее всего, заплатит позже срока. Поэтому аванс снижен на ступень.">
+          <Badge variant="outline">вероятна задержка</Badge>
+        </Hint>
+      )}
+      {offer.flags.lowData && (
+        <Hint text="У покупателя нет свежей отчётности, оценка риска ориентировочная: взято среднее по отрасли и размеру.">
+          <Badge variant="outline">мало данных</Badge>
+        </Hint>
+      )}
+      {offer.flags.reducedToLimit && (
+        <Hint text="Лимит на покупателя почти выбран, поэтому сумма меньше расчётной.">
+          <Badge variant="outline">уменьшено до остатка лимита</Badge>
+        </Hint>
+      )}
     </div>
+  );
+}
+
+/** Справка «Что значат уровни риска» (П2-1.4) - шкала, одинаковая на всех экранах */
+function RiskScaleHelp() {
+  return (
+    <>
+      <span className="mb-2 block">{RISK_HELP_INTRO}</span>
+      {(Object.keys(RISK_SCALE) as RiskLevel[]).map((level) => (
+        <span key={level} className="mb-1 flex items-start gap-2">
+          <RiskBadge level={level} />
+          <span>
+            <span className="font-medium">{RISK_SCALE[level].title}.</span> {RISK_SCALE[level].text}
+          </span>
+        </span>
+      ))}
+    </>
   );
 }
 
@@ -166,38 +234,64 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
     <Card className="gap-4 py-5" aria-label="Карточка предложения">
       <CardHeader className="px-5">
         <CardTitle className="text-base">
-          {offer.client.name}: {updLabel(offer.updNumber)} от {date(offer.updDate)}
+          {offer.client.name}: УПД {offer.updNumber} от {date(offer.updDate)}
         </CardTitle>
         <CardDescription>Покупатель {buyerTitle(offer.buyer)}</CardDescription>
         <OfferFlags offer={offer} />
       </CardHeader>
       <CardContent className="flex flex-col gap-4 px-5 text-sm">
         <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
-          <dt className="text-muted-foreground">Сумма финансирования</dt>
+          <dt className="text-muted-foreground">
+            <Hint text="Столько банк выплатит клиенту сразу. Это часть суммы УПД: чем надёжнее покупатель, тем доля больше (уровень A — 90%, B — 85%, C — 75%).">
+              Сумма финансирования
+            </Hint>
+          </dt>
           <dd className="text-right font-semibold tabular-nums">{money(offer.ead)}</dd>
-          <dt className="text-muted-foreground">Цена</dt>
+          <dt className="text-muted-foreground">
+            <Hint text="Столько клиент заплатит банку за весь срок одной суммой, не ежемесячно. Проценты годовых — то же самое в пересчёте на год.">
+              Стоимость факторинга
+            </Hint>
+          </dt>
           <dd className="text-right tabular-nums">
             {money(offer.price)} · {percent(offer.priceRate)} год.
           </dd>
-          <dt className="text-muted-foreground">Срок</dt>
+          <dt className="text-muted-foreground">
+            <Hint text="Сколько дней банк ждёт деньги от покупателя: дни до плановой оплаты плюс ожидаемая задержка.">
+              Срок финансирования
+            </Hint>
+          </dt>
           <dd className="text-right tabular-nums">{offer.termDays} дн.</dd>
-          <dt className="text-muted-foreground">Уровень риска · PD</dt>
-          <dd className="flex items-center justify-end gap-2 tabular-nums">
-            <RiskBadge level={offer.riskLevel} /> {percent(offer.pd)}
-          </dd>
-          <dt className="text-muted-foreground">EL · доход банка</dt>
-          <dd className="text-right tabular-nums">
-            {money(offer.el)} · {money(offer.income)}
-          </dd>
+          <dt className="text-muted-foreground">Ожидаемые потери, ₽</dt>
+          <dd className="text-right tabular-nums">{money(offer.el)}</dd>
+          <dt className="text-muted-foreground">Доход банка, ₽</dt>
+          <dd className="text-right tabular-nums">{money(offer.income)}</dd>
         </dl>
+
+        <section aria-label="Оценка риска">
+          <h4 className="mb-1 flex items-center gap-1 font-medium">
+            Оценка риска
+            <HelpButton title={RISK_HELP_TITLE}>
+              <RiskScaleHelp />
+            </HelpButton>
+          </h4>
+          <p className="flex items-start gap-2">
+            <RiskBadge level={offer.riskLevel} />
+            <span>{buyerRiskSentence(offer.riskLevel, offer.pd)}</span>
+          </p>
+          {offer.pDelay !== null && offer.delayThresholdDays !== null && (
+            <p className="mt-1">{delaySentence(offer.pDelay, offer.delayThresholdDays)}</p>
+          )}
+        </section>
 
         <section>
           <div className="mb-1 flex items-center justify-between gap-2">
             <h4 className="font-medium">Причины оценки</h4>
             {offer.textSource && (
-              <Badge variant={offer.textSource === 'FAILED' ? 'destructive' : 'secondary'} title="Откуда тексты карточки">
-                тексты {label(TEXT_SOURCES, offer.textSource)}
-              </Badge>
+              <Hint align="end" text={`Тексты карточки: ${label(TEXT_SOURCES, offer.textSource)}`}>
+                <Badge variant={offer.textSource === 'FAILED' ? 'destructive' : 'secondary'}>
+                  {offer.textSource === 'FAILED' ? 'без черновика: сбой LLM' : 'составлено автоматически'}
+                </Badge>
+              </Hint>
             )}
           </div>
           {offer.reasonsText && <p className="mb-2">{offer.reasonsText}</p>}
@@ -253,8 +347,8 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
           <div className="flex flex-col gap-2 rounded-md border border-primary/40 bg-primary/5 p-3" role="alertdialog">
             <p>
               {confirming === 'transfer'
-                ? `Передать ${updLabel(offer.updNumber)} на ${money(offer.ead)} в ВТБ Факторинг? Решение нельзя отменить.`
-                : `Отклонить предложение по ${updLabel(offer.updNumber)}? Оно уйдёт из очереди и больше не будет предложено.`}
+                ? `Передать УПД ${offer.updNumber} на ${money(offer.ead)} в ВТБ Факторинг? Решение нельзя отменить.`
+                : `Отклонить предложение по УПД ${offer.updNumber}? Оно уйдёт из очереди и больше не будет предложено.`}
             </p>
             <div className="flex gap-2">
               <Button
@@ -300,7 +394,7 @@ function Notifications({ managerId }: { managerId: number | null }) {
               </div>
               <div className="text-xs text-muted-foreground">
                 {item.client?.name}
-                {item.updNumber ? ` · ${updLabel(item.updNumber)}` : ''}
+                {item.updNumber ? ` · УПД ${item.updNumber}` : ''}
                 {item.type === 'OVERDUE' && item.payload
                   ? ` · остаток ${money(Number(item.payload.outstanding))}, ${String(item.payload.overdueDays)} дн. просрочки`
                   : ''}
@@ -389,7 +483,7 @@ function ClientCardView({ clientId, onSelectOffer }: { clientId: number; onSelec
             <ul className="flex flex-col gap-1 text-xs">
               {data.decidedOffers.map((item) => (
                 <li key={item.offerId}>
-                  {updLabel(item.updNumber)} · {money(item.ead)} ·{' '}
+                  УПД {item.updNumber} · {money(item.ead)} ·{' '}
                   {item.status === 'TRANSFERRED' ? 'передано в факторинг' : 'отклонено'} · {item.decidedBy} ·{' '}
                   {dateTime(item.decidedAt)}
                 </li>

@@ -1,12 +1,16 @@
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { type UpdFilter, useRun, useRuns } from '@/api/backend';
 import type { Run } from '@/api/types';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Funnel } from '@/features/process/Funnel';
 import { LaunchCard } from '@/features/process/LaunchCard';
 import { ManualComparison } from '@/features/process/ManualComparison';
+import { Portfolio } from '@/features/process/Portfolio';
 import { RunJournal } from '@/features/process/RunJournal';
 import { RunSteps } from '@/features/process/RunSteps';
+import { Section } from '@/features/process/Section';
 import { UpdTable } from '@/features/process/UpdTable';
 import { openRun } from '@/lib/useHashRoute';
 
@@ -38,14 +42,25 @@ export function ProcessPage({ canOperate = true, runId: requested = null }: { ca
         </div>
       </div>
       {run.data && <RunJournal run={run.data} />}
+      {run.data?.comparison && <ManualComparison comparison={run.data.comparison} />}
     </div>
   );
 }
 
-/** Правая колонка: фильтр детализации свой у каждого прогона (key), воронка открывает УПД за ступенью */
+/**
+ * Правая колонка: воронка, под ней портфель, детализация - свёрнутым блоком (П2-5.2): по умолчанию закрыта, шаг или
+ * причина воронки раскрывают её с нужным списком. Фильтр свой у каждого прогона (key).
+ */
 function RunResults({ run }: { run: Run }) {
   const [filter, setFilter] = useState<UpdFilter>({ page: 0 });
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const finished = run.status !== 'RUNNING';
+  const toggle = (
+    <Button variant="outline" size="sm" aria-expanded={detailsOpen} onClick={() => setDetailsOpen((open) => !open)}>
+      {detailsOpen ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+      {detailsOpen ? 'Свернуть' : 'Показать'}
+    </Button>
+  );
 
   return (
     <>
@@ -53,10 +68,22 @@ function RunResults({ run }: { run: Run }) {
         runId={run.id}
         enabled={finished && run.status !== 'STOPPED'}
         selectedStage={filter.stage ?? null}
-        onSelect={(next) => setFilter({ ...next, page: 0 })}
+        onSelect={(next) => {
+          setFilter({ ...next, page: 0 });
+          setDetailsOpen(true);
+        }}
       />
-      <UpdTable runId={run.id} enabled={finished} filter={filter} onFilter={setFilter} />
-      {run.comparison && <ManualComparison comparison={run.comparison} />}
+      {finished && run.status !== 'STOPPED' && <Portfolio run={run} />}
+      {detailsOpen ? (
+        <UpdTable runId={run.id} enabled={finished} filter={filter} onFilter={setFilter} actions={toggle} />
+      ) : (
+        <Section title="Детализация по УПД" actions={toggle}>
+          <p className="text-sm text-muted-foreground">
+            Список УПД прогона с фильтрами и путём каждого УПД через шаги. Откройте его здесь или нажмите на шаг или причину в
+            воронке.
+          </p>
+        </Section>
+      )}
     </>
   );
 }
