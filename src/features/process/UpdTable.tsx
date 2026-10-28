@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   CATEGORIES,
+  FUNNEL_STAGES,
   LOG_EVENTS,
   PAYMENT_STATUSES,
   REASONS,
@@ -85,7 +86,7 @@ export function UpdTable({
         </select>
         {filter.stage && (
           <Badge variant="outline" className="gap-1">
-            ступень {filter.stage}
+            {label(FUNNEL_STAGES, filter.stage)}
             <button
               type="button"
               aria-label="Сбросить ступень"

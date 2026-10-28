@@ -133,6 +133,18 @@ export function updLabel(number: string | null | undefined): string {
   return number.toUpperCase().startsWith('УПД') ? number : `УПД ${number}`;
 }
 
+/** Шаги воронки - как их называет экран «Воронка УПД» (фильтр детализации по шагу) */
+export const FUNNEL_STAGES: Record<string, string> = {
+  OPEN: 'Все неоплаченные счета',
+  CATEGORY_1_4: 'Срок оплаты ещё не прошёл',
+  HAS_DATA: 'По покупателю есть данные',
+  NO_STOP_FACTOR: 'У покупателя нет стоп-факторов',
+  HAS_HISTORY: 'Есть история оплат',
+  PASSED_RULES: 'Подходит по условиям банка',
+  TOP_N: 'Три лучших предложения на клиента',
+  QUEUED: 'Можно предложить клиентам',
+};
+
 /** События журнала прогона по-русски (Р-59); неизвестный код показывается как есть */
 export const LOG_EVENTS: Record<string, string> = {
   RUN_STARTED: 'Прогон запущен',

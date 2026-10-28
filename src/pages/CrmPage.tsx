@@ -1,6 +1,6 @@
 import { Bell, Check, Copy, Send, ShieldAlert, X } from 'lucide-react';
 import { useState } from 'react';
-import { useClientCard, useManagers, useNotifications, useOfferDecision, useQueue } from '@/api/backend';
+import { useClientCard, useManagers, useNotifications, useOfferDecision, useParameters, useQueue } from '@/api/backend';
 import type { CardUpd, Offer, RiskLevel } from '@/api/types';
 import { HelpButton, Hint } from '@/components/Hint';
 import { ErrorNote, RiskBadge } from '@/components/StatusBadges';
@@ -9,8 +9,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { NOTIFICATION_TYPES, REASONS, TEXT_SOURCES, buyerTitle, date, dateTime, label, money, percent } from '@/lib/format';
-import { RISK_HELP_INTRO, RISK_HELP_TITLE, RISK_SCALE, buyerRiskSentence, delaySentence } from '@/lib/risk';
+import {
+  NOTIFICATION_TYPES,
+  REASONS,
+  TEXT_SOURCES,
+  buyerTitle,
+  date,
+  dateTime,
+  label,
+  money,
+  percent,
+  updLabel,
+} from '@/lib/format';
+import {
+  RISK_HELP_INTRO,
+  RISK_HELP_TITLE,
+  RISK_SCALE,
+  buyerRiskSentence,
+  delaySentence,
+  outOf100,
+  riskBoundsOf,
+  riskScaleText,
+} from '@/lib/risk';
 import { cn } from '@/lib/utils';
 
 /** Эмулятор CRM (ЭП-7): очередь предложений и карточка клиента так, как их получает CRM по API (п. 5.5) */
@@ -195,6 +215,7 @@ function OfferFlags({ offer }: { offer: Offer }) {
 
 /** Справка «Что значат уровни риска» (П2-1.4) - шкала, одинаковая на всех экранах */
 function RiskScaleHelp() {
+  const bounds = riskBoundsOf(useParameters().data);
   return (
     <>
       <span className="mb-2 block">{RISK_HELP_INTRO}</span>
@@ -202,7 +223,7 @@ function RiskScaleHelp() {
         <span key={level} className="mb-1 flex items-start gap-2">
           <RiskBadge level={level} />
           <span>
-            <span className="font-medium">{RISK_SCALE[level].title}.</span> {RISK_SCALE[level].text}
+            <span className="font-medium">{RISK_SCALE[level].title}.</span> {riskScaleText(level, bounds)}
           </span>
         </span>
       ))}
@@ -234,7 +255,7 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
     <Card className="gap-4 py-5" aria-label="Карточка предложения">
       <CardHeader className="px-5">
         <CardTitle className="text-base">
-          {offer.client.name}: УПД {offer.updNumber} от {date(offer.updDate)}
+          {offer.client.name}: {updLabel(offer.updNumber)} от {date(offer.updDate)}
         </CardTitle>
         <CardDescription>Покупатель {buyerTitle(offer.buyer)}</CardDescription>
         <OfferFlags offer={offer} />
@@ -347,8 +368,8 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
           <div className="flex flex-col gap-2 rounded-md border border-primary/40 bg-primary/5 p-3" role="alertdialog">
             <p>
               {confirming === 'transfer'
-                ? `Передать УПД ${offer.updNumber} на ${money(offer.ead)} в ВТБ Факторинг? Решение нельзя отменить.`
-                : `Отклонить предложение по УПД ${offer.updNumber}? Оно уйдёт из очереди и больше не будет предложено.`}
+                ? `Передать ${updLabel(offer.updNumber)} на ${money(offer.ead)} в ВТБ Факторинг? Решение нельзя отменить.`
+                : `Отклонить предложение по ${updLabel(offer.updNumber)}? Оно уйдёт из очереди и больше не будет предложено.`}
             </p>
             <div className="flex gap-2">
               <Button
@@ -394,7 +415,7 @@ function Notifications({ managerId }: { managerId: number | null }) {
               </div>
               <div className="text-xs text-muted-foreground">
                 {item.client?.name}
-                {item.updNumber ? ` · УПД ${item.updNumber}` : ''}
+                {item.updNumber ? ` · ${updLabel(item.updNumber)}` : ''}
                 {item.type === 'OVERDUE' && item.payload
                   ? ` · остаток ${money(Number(item.payload.outstanding))}, ${String(item.payload.overdueDays)} дн. просрочки`
                   : ''}
@@ -444,9 +465,17 @@ function ClientCardView({ clientId, onSelectOffer }: { clientId: number; onSelec
               <TableHead>Покупатель</TableHead>
               <TableHead className="text-right">Остаток</TableHead>
               <TableHead>Кат.</TableHead>
-              <TableHead className="text-right">PD</TableHead>
-              <TableHead className="text-right">P задержки</TableHead>
-              <TableHead className="text-right">P 90+</TableHead>
+              <TableHead>Риск покупателя</TableHead>
+              <TableHead className="text-right">
+                <Hint align="end" text="Из 100 таких счетов столько оплатят позже срока больше порога задержки прогона.">
+                  Задержка
+                </Hint>
+              </TableHead>
+              <TableHead className="text-right">
+                <Hint align="end" text="Из 100 таких счетов столько не будут оплачены больше 90 дней после срока.">
+                  Просрочка 90+
+                </Hint>
+              </TableHead>
               <TableHead>Предложение</TableHead>
             </TableRow>
           </TableHeader>
@@ -460,9 +489,19 @@ function ClientCardView({ clientId, onSelectOffer }: { clientId: number; onSelec
                 <TableCell className="max-w-48 truncate">{upd.buyer?.name ?? upd.buyer?.inn}</TableCell>
                 <TableCell className="text-right tabular-nums">{money(upd.outstanding)}</TableCell>
                 <TableCell>{upd.category ?? '—'}</TableCell>
-                <TableCell className="text-right tabular-nums">{percent(upd.pd)}</TableCell>
-                <TableCell className="text-right tabular-nums">{percent(upd.pDelay)}</TableCell>
-                <TableCell className="text-right tabular-nums">{percent(upd.pOverdue90)}</TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {upd.riskLevel ? (
+                    <>
+                      <RiskBadge level={upd.riskLevel} /> <span className="text-xs">{RISK_SCALE[upd.riskLevel].word}</span>
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </TableCell>
+                <TableCell className="text-right text-xs">{upd.pDelay !== null ? outOf100(upd.pDelay).text : '—'}</TableCell>
+                <TableCell className="text-right text-xs">
+                  {upd.pOverdue90 !== null ? outOf100(upd.pOverdue90).text : '—'}
+                </TableCell>
                 <TableCell>
                   {upd.offerId !== null ? (
                     <Button variant="link" size="sm" className="h-auto p-0" onClick={() => onSelectOffer(upd.offerId!)}>
@@ -483,7 +522,7 @@ function ClientCardView({ clientId, onSelectOffer }: { clientId: number; onSelec
             <ul className="flex flex-col gap-1 text-xs">
               {data.decidedOffers.map((item) => (
                 <li key={item.offerId}>
-                  УПД {item.updNumber} · {money(item.ead)} ·{' '}
+                  {updLabel(item.updNumber)} · {money(item.ead)} ·{' '}
                   {item.status === 'TRANSFERRED' ? 'передано в факторинг' : 'отклонено'} · {item.decidedBy} ·{' '}
                   {dateTime(item.decidedAt)}
                 </li>
