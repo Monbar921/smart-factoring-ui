@@ -82,45 +82,59 @@ export function CrmPage() {
             <CardContent className="px-3">
               <Table>
                 <TableHeader>
+                  {/* шапка в две строки, чтобы очередь помещалась без горизонтальной прокрутки */}
                   <TableRow>
-                    <TableHead>Клиент</TableHead>
-                    <TableHead>
+                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-normal">Клиент</TableHead>
+                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-normal">
                       <Hint text="УПД — документ об отгрузке, по которому покупатель ещё должен заплатить.">
-                        УПД и покупатель
+                        УПД и<br />
+                        покупатель
                       </Hint>
                     </TableHead>
-                    <TableHead className="text-right">
+                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
                       <Hint text="Столько банк выплатит клиенту сразу. Это часть суммы УПД: чем надёжнее покупатель, тем доля больше (уровень A — 90%, B — 85%, C — 75%).">
-                        Сумма финансирования, ₽
+                        Сумма
+                        <br />
+                        финансирования, ₽
                       </Hint>
                     </TableHead>
-                    <TableHead className="text-right">
+                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
                       <Hint text="Столько клиент заплатит банку за весь срок одной суммой, не ежемесячно. Проценты годовых — то же самое в пересчёте на год.">
-                        Стоимость факторинга
+                        Стоимость
+                        <br />
+                        факторинга
                       </Hint>
                     </TableHead>
-                    <TableHead className="text-right">
+                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
                       <Hint text="Сколько дней банк ждёт деньги от покупателя: дни до плановой оплаты плюс ожидаемая задержка.">
-                        Срок финансирования, дн.
+                        Срок
+                        <br />
+                        финансирования, дн.
                       </Hint>
                     </TableHead>
-                    <TableHead>
-                      <span className="inline-flex items-center gap-1">
-                        Риск покупателя
+                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-normal">
+                      <span className="inline-flex items-end gap-1">
+                        <span>
+                          Риск
+                          <br />
+                          покупателя
+                        </span>
                         <HelpButton title={RISK_HELP_TITLE}>
                           <RiskScaleHelp />
                         </HelpButton>
                       </span>
                     </TableHead>
-                    <TableHead className="text-right">
+                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
                       <Hint
                         text="Шанс согласия сейчас оценивается правилом: базово 7%, увеличивается, если у клиента мало денег на счёте или отсрочка по договору 60 дней и больше."
                         align="end"
                       >
-                        Ожидаемый доход, ₽
+                        Ожидаемый
+                        <br />
+                        доход, ₽
                       </Hint>
                     </TableHead>
-                    <TableHead>Пометки</TableHead>
+                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-normal">Пометки</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -133,19 +147,19 @@ export function CrmPage() {
                         setClientId(item.client.id);
                       }}
                     >
-                      <TableCell className="max-w-44 truncate">{item.client.name}</TableCell>
+                      <TableCell className="max-w-32 truncate">{item.client.name}</TableCell>
                       <TableCell>
                         <div className="font-medium">
                           {item.updNumber} <span className="font-normal text-muted-foreground">от {date(item.updDate)}</span>
                         </div>
-                        <div className="max-w-56 truncate text-xs text-muted-foreground">{buyerTitle(item.buyer)}</div>
+                        <div className="max-w-44 truncate text-xs text-muted-foreground">{buyerTitle(item.buyer)}</div>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{money(item.ead)}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap tabular-nums">{money(item.ead)}</TableCell>
                       <TableCell className="text-right tabular-nums">
                         <div>{money(item.price)}</div>
                         <div className="text-xs text-muted-foreground">{percent(item.priceRate)} год.</div>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{item.termDays} дн.</TableCell>
+                      <TableCell className="text-right whitespace-nowrap tabular-nums">{item.termDays} дн.</TableCell>
                       <TableCell className="whitespace-nowrap">
                         <RiskBadge level={item.riskLevel} /> <span className="text-xs">{RISK_SCALE[item.riskLevel].word}</span>
                       </TableCell>
@@ -465,7 +479,14 @@ function ClientCardView({ clientId, onSelectOffer }: { clientId: number; onSelec
               <TableHead>Покупатель</TableHead>
               <TableHead className="text-right">Остаток</TableHead>
               <TableHead>Кат.</TableHead>
-              <TableHead>Риск покупателя</TableHead>
+              <TableHead>
+                <span className="inline-flex items-center gap-1">
+                  Риск покупателя
+                  <HelpButton title={RISK_HELP_TITLE}>
+                    <RiskScaleHelp />
+                  </HelpButton>
+                </span>
+              </TableHead>
               <TableHead className="text-right">
                 <Hint align="end" text="Из 100 таких счетов столько оплатят позже срока больше порога задержки прогона.">
                   Задержка

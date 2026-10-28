@@ -141,7 +141,7 @@ function StageRow({
   const openStage = () => onSelect(first ? {} : { stage: stage.code });
 
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)] gap-x-4 gap-y-1 lg:grid-cols-[13rem_minmax(0,1fr)_7rem]">
+    <li className="grid grid-cols-[minmax(0,1fr)] gap-x-4 gap-y-1 lg:grid-cols-[13rem_minmax(0,1fr)_9.5rem]">
       <div className="min-w-0">
         <button
           type="button"
@@ -159,7 +159,7 @@ function StageRow({
           onClick={openStage}
           className="flex h-6 w-full overflow-hidden rounded-sm bg-muted"
           aria-label={`${stage.title}: осталось ${stage.count}${droppedTotal ? `, ушло ${droppedTotal}` : ''}`}
-          title={money(stage.amount)}
+          title={`Осталось ${stage.count.toLocaleString('ru-RU')} счетов на ${money(stage.amount)}`}
         >
           <span
             className="h-full shrink-0"
@@ -170,6 +170,7 @@ function StageRow({
             return (
               <span
                 key={drop.reason}
+                title={`${style.title}: ${drop.count.toLocaleString('ru-RU')}`}
                 className="h-full shrink-0"
                 style={{
                   width: width(drop.count),
@@ -220,7 +221,7 @@ function StageRow({
           <Button
             variant="outline"
             size="sm"
-            className="mt-1"
+            className="mt-1 whitespace-nowrap"
             onClick={() => {
               window.location.hash = '#/crm';
             }}

@@ -31,8 +31,9 @@ export function Hint({
         id={id}
         role="tooltip"
         className={cn(
-          'pointer-events-none invisible absolute top-full z-30 mt-1 w-64 rounded-md border bg-popover p-2 text-left text-xs font-normal whitespace-normal text-popover-foreground normal-case opacity-0 shadow-md transition-opacity',
-          'group-focus-within/hint:visible group-focus-within/hint:opacity-100 group-hover/hint:visible group-hover/hint:opacity-100',
+          // hidden, а не invisible: скрытая подсказка не занимает места и не даёт прокрутку в таблицах (overflow-x-auto)
+          'pointer-events-none absolute top-full z-30 mt-1 hidden w-64 rounded-md border bg-popover p-2 text-left text-xs font-normal whitespace-normal text-popover-foreground normal-case shadow-md',
+          'group-focus-within/hint:block group-hover/hint:block',
           align === 'end' ? 'right-0' : 'left-0',
         )}
       >

@@ -15,6 +15,13 @@ export function money(value: number | null | undefined): string {
   return value === null || value === undefined ? '—' : `${moneyFormat.format(value)} ₽`;
 }
 
+/** PD всегда с двумя знаками: 1,00 % - не путать с границей уровня A «до 1 %» */
+const pdFormat = new Intl.NumberFormat('ru-RU', { style: 'percent', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+export function pdPercent(value: number | null | undefined): string {
+  return value === null || value === undefined ? '—' : pdFormat.format(value);
+}
+
 export function percent(value: number | null | undefined): string {
   return value === null || value === undefined ? '—' : percentFormat.format(value);
 }

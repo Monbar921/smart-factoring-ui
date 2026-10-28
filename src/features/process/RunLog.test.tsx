@@ -34,7 +34,9 @@ describe('журнал прогона', () => {
     });
     renderWithQuery(<RunLog runId={2} isRunning={false} />);
 
-    expect(await screen.findByText('Нет данных по покупателю:')).toHaveAttribute('title', 'NO_BUYER_DATA');
+    // текст сам начинается с названия события - без повтора «Нет данных по покупателю: Нет данных…»
+    expect(await screen.findByText('Нет данных по покупателю ИНН 7327050690')).toHaveAttribute('title', 'NO_BUYER_DATA');
+    expect(screen.queryByText('Нет данных по покупателю:')).not.toBeInTheDocument();
     expect(screen.getByText('NEW_CODE:')).toBeInTheDocument();
     expect(screen.getByText('Записи 1–300 из 3 865')).toBeInTheDocument();
     expect(screen.getByText('1 / 13')).toBeInTheDocument();

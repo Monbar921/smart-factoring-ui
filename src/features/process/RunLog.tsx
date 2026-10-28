@@ -54,10 +54,15 @@ export function RunLog({ runId, isRunning }: { runId: number; isRunning: boolean
             <span className="text-muted-foreground">{dateTime(entry.loggedAt)}</span>
             <span>{entry.stepNo ? `шаг ${entry.stepNo}` : ''}</span>
             <span>
-              <span className="font-semibold" title={entry.eventCode}>
-                {label(LOG_EVENTS, entry.eventCode)}:
-              </span>{' '}
-              {entry.message}
+              {/* название события - если текст сам с него не начинается («Прогон запущен: Прогон запущен, …») */}
+              {!entry.message.startsWith(label(LOG_EVENTS, entry.eventCode)) && (
+                <>
+                  <span className="font-semibold" title={entry.eventCode}>
+                    {label(LOG_EVENTS, entry.eventCode)}:
+                  </span>{' '}
+                </>
+              )}
+              <span title={entry.eventCode}>{entry.message}</span>
             </span>
           </li>
         ))}
