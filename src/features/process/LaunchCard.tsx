@@ -123,6 +123,7 @@ export function LaunchCard({
                   <label key={client.inn} className="flex items-center gap-2 py-0.5">
                     <input
                       type="checkbox"
+                      aria-label={`${client.name ?? ''} ${client.inn}`.trim()}
                       checked={selected.includes(client.inn)}
                       onChange={(event) =>
                         setSelected((current) =>

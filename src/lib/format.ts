@@ -127,6 +127,36 @@ export const STEP_STATUSES: Record<string, string> = {
   STOPPED: 'Остановлен',
 };
 
+/** УПД в тексте: «УПД U-1004»; номер «УПД-0255» (партии ML-команды) уже со словом «УПД» - без повтора (Р-59) */
+export function updLabel(number: string | null | undefined): string {
+  if (!number) return 'УПД';
+  return number.toUpperCase().startsWith('УПД') ? number : `УПД ${number}`;
+}
+
+/** События журнала прогона по-русски (Р-59); неизвестный код показывается как есть */
+export const LOG_EVENTS: Record<string, string> = {
+  RUN_STARTED: 'Прогон запущен',
+  RUN_FINISHED: 'Прогон завершён',
+  RUN_INTERRUPTED: 'Прогон прерван',
+  RUN_TOO_LONG: 'Прогон дольше нормы',
+  STEP_FAILED: 'Сбой шага',
+  NO_BUYER_DATA: 'Нет данных по покупателю',
+  OVERDUE_NOTIFICATION: 'Уведомление о просрочке',
+  CASH_GAP_SCENARIO: 'Кассовый разрыв',
+  RISK_SIGNAL: 'Сигнал в риск',
+  STOP_FACTOR: 'Стоп-фактор',
+  LOW_DATA: 'Мало данных',
+  NO_PAYMENT_HISTORY: 'Нет истории оплат',
+  NO_PAIR_HISTORY: 'Нет истории пары',
+  SCORING_ERROR: 'Ошибка оценки',
+  LLM_TEXTS: 'Тексты карточек',
+  LLM_ERROR: 'Сбой LLM',
+  SKIPPED_DECIDED: 'Уже есть решение',
+  OFFER_TRANSFERRED: 'Передано в факторинг',
+  OFFER_REJECTED: 'Отклонено менеджером',
+  OFFER_REVOKED: 'Предложение отозвано',
+};
+
 /** Откуда тексты карточки предложения (Р-58) */
 export const TEXT_SOURCES: Record<string, string> = {
   LLM: 'от LLM',

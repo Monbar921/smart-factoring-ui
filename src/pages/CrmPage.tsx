@@ -8,7 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { NOTIFICATION_TYPES, REASONS, TEXT_SOURCES, buyerTitle, date, dateTime, label, money, percent } from '@/lib/format';
+import {
+  NOTIFICATION_TYPES,
+  REASONS,
+  TEXT_SOURCES,
+  buyerTitle,
+  date,
+  dateTime,
+  label,
+  money,
+  percent,
+  updLabel,
+} from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 /** Эмулятор CRM (ЭП-7): очередь предложений и карточка клиента так, как их получает CRM по API (п. 5.5) */
@@ -155,7 +166,7 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
     <Card className="gap-4 py-5" aria-label="Карточка предложения">
       <CardHeader className="px-5">
         <CardTitle className="text-base">
-          {offer.client.name}: УПД {offer.updNumber} от {date(offer.updDate)}
+          {offer.client.name}: {updLabel(offer.updNumber)} от {date(offer.updDate)}
         </CardTitle>
         <CardDescription>Покупатель {buyerTitle(offer.buyer)}</CardDescription>
         <OfferFlags offer={offer} />
@@ -242,8 +253,8 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
           <div className="flex flex-col gap-2 rounded-md border border-primary/40 bg-primary/5 p-3" role="alertdialog">
             <p>
               {confirming === 'transfer'
-                ? `Передать УПД ${offer.updNumber} на ${money(offer.ead)} в ВТБ Факторинг? Решение нельзя отменить.`
-                : `Отклонить предложение по УПД ${offer.updNumber}? Оно уйдёт из очереди и больше не будет предложено.`}
+                ? `Передать ${updLabel(offer.updNumber)} на ${money(offer.ead)} в ВТБ Факторинг? Решение нельзя отменить.`
+                : `Отклонить предложение по ${updLabel(offer.updNumber)}? Оно уйдёт из очереди и больше не будет предложено.`}
             </p>
             <div className="flex gap-2">
               <Button
@@ -289,7 +300,7 @@ function Notifications({ managerId }: { managerId: number | null }) {
               </div>
               <div className="text-xs text-muted-foreground">
                 {item.client?.name}
-                {item.updNumber ? ` · УПД ${item.updNumber}` : ''}
+                {item.updNumber ? ` · ${updLabel(item.updNumber)}` : ''}
                 {item.type === 'OVERDUE' && item.payload
                   ? ` · остаток ${money(Number(item.payload.outstanding))}, ${String(item.payload.overdueDays)} дн. просрочки`
                   : ''}
@@ -378,7 +389,7 @@ function ClientCardView({ clientId, onSelectOffer }: { clientId: number; onSelec
             <ul className="flex flex-col gap-1 text-xs">
               {data.decidedOffers.map((item) => (
                 <li key={item.offerId}>
-                  УПД {item.updNumber} · {money(item.ead)} ·{' '}
+                  {updLabel(item.updNumber)} · {money(item.ead)} ·{' '}
                   {item.status === 'TRANSFERRED' ? 'передано в факторинг' : 'отклонено'} · {item.decidedBy} ·{' '}
                   {dateTime(item.decidedAt)}
                 </li>
