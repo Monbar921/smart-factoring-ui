@@ -15,6 +15,7 @@ import {
   TEXT_SOURCES,
   buyerTitle,
   lowDataText,
+  rankText,
   date,
   dateTime,
   label,
@@ -70,7 +71,7 @@ export function CrmPage() {
         {managers.data?.length === 0 && <span className="text-sm text-muted-foreground">Менеджеров нет: запустите прогон.</span>}
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 min-[1400px]:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="flex min-w-0 flex-col gap-6">
           <Card className="gap-3 py-5">
             <CardHeader className="px-5">
@@ -83,46 +84,47 @@ export function CrmPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3">
-              <Table>
+              {/* поля ячеек уже обычных: 9 колонок помещаются рядом с карточкой без горизонтальной прокрутки */}
+              <Table className="[&_td]:px-1.5 [&_th]:px-1.5">
                 <TableHeader>
                   {/* шапка в две строки, чтобы очередь помещалась без горизонтальной прокрутки */}
                   <TableRow>
-                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-normal">Клиент</TableHead>
-                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-normal">
+                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-nowrap">Клиент</TableHead>
+                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-nowrap">
                       <Hint text="УПД — документ об отгрузке, по которому покупатель ещё должен заплатить.">
                         УПД и<br />
                         покупатель
                       </Hint>
                     </TableHead>
-                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
+                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-nowrap">
                       <Hint text="Столько банк выплатит клиенту сразу. Это часть суммы УПД: чем надёжнее покупатель, тем доля больше (уровень A — 90%, B — 85%, C — 75%).">
                         Сумма
                         <br />
                         финансирования, ₽
                       </Hint>
                     </TableHead>
-                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
+                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-nowrap">
                       <Hint text="Столько клиент заплатит банку за весь срок одной суммой, не ежемесячно. Проценты годовых — то же самое в пересчёте на год.">
                         Стоимость
                         <br />
                         факторинга
                       </Hint>
                     </TableHead>
-                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
+                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-nowrap">
                       <Hint text="Столько заработает банк, если клиент согласится.">
                         Доход
                         <br />
                         банка, ₽
                       </Hint>
                     </TableHead>
-                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
+                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-nowrap">
                       <Hint text="Сколько дней банк ждёт деньги от покупателя: дни до плановой оплаты плюс ожидаемая задержка.">
                         Срок
                         <br />
                         финансирования, дн.
                       </Hint>
                     </TableHead>
-                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-normal">
+                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-nowrap">
                       <span className="inline-flex items-end gap-1">
                         <span>
                           Риск
@@ -134,7 +136,7 @@ export function CrmPage() {
                         </HelpButton>
                       </span>
                     </TableHead>
-                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
+                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-nowrap">
                       <Hint
                         text="Доход банка × шанс, что клиент согласится. Шанс считается по профилю клиента: базово 7%, выше — если у клиента мало денег на счёте или отсрочка по договору 60 дней и больше."
                         align="end"
@@ -144,7 +146,7 @@ export function CrmPage() {
                         приоритет, ₽
                       </Hint>
                     </TableHead>
-                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-normal">Пометки</TableHead>
+                    <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-nowrap">Пометки</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -171,18 +173,15 @@ export function CrmPage() {
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap tabular-nums">{money(item.income)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap tabular-nums">{item.termDays} дн.</TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell>
                         <RiskBadge level={item.riskLevel} /> <span className="text-xs">{RISK_SCALE[item.riskLevel].word}</span>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        <Hint
-                          align="end"
-                          text={`${money(item.income)} × шанс согласия ${percent(item.tr)} = ${money(item.rank)}`}
-                        >
+                        <Hint align="end" text={rankText(item)}>
                           {money(item.rank)}
                         </Hint>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-28">
                         <OfferFlags offer={item} />
                       </TableCell>
                     </TableRow>
@@ -211,27 +210,35 @@ export function CrmPage() {
   );
 }
 
+const FLAG = 'shrink whitespace-normal text-left';
+
 function OfferFlags({ offer }: { offer: Offer }) {
   return (
     <div className="flex flex-wrap gap-1">
       {offer.flags.isNew && (
         <Hint text="Предложение появилось в последнем прогоне.">
-          <Badge className="bg-primary/10 text-primary">новое</Badge>
+          <Badge className={cn(FLAG, 'bg-primary/10 text-primary')}>новое</Badge>
         </Hint>
       )}
       {offer.flags.delayProbable && (
         <Hint text="Модель задержки оценила, что покупатель, скорее всего, заплатит позже срока. Поэтому аванс снижен на ступень.">
-          <Badge variant="outline">вероятна задержка</Badge>
+          <Badge variant="outline" className={FLAG}>
+            вероятна задержка
+          </Badge>
         </Hint>
       )}
       {offer.flags.lowData && (
         <Hint text={lowDataText(offer.flags.lowDataReason)}>
-          <Badge variant="outline">мало данных</Badge>
+          <Badge variant="outline" className={FLAG}>
+            мало данных
+          </Badge>
         </Hint>
       )}
       {offer.flags.reducedToLimit && (
         <Hint text="Лимит на покупателя почти выбран, поэтому сумма меньше расчётной.">
-          <Badge variant="outline">уменьшено до остатка лимита</Badge>
+          <Badge variant="outline" className={FLAG}>
+            уменьшено до остатка лимита
+          </Badge>
         </Hint>
       )}
     </div>

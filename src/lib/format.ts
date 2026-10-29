@@ -1,3 +1,4 @@
+import type { Offer } from '@/api/types';
 /** Форматы и подписи для экранов прогона и CRM */
 
 const moneyFormat = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
@@ -242,4 +243,14 @@ const LOW_DATA_REASONS: Record<string, string> = {
 export function lowDataText(reason: string | null | undefined): string {
   const why = reason ? (LOW_DATA_REASONS[reason] ?? reason) : null;
   return `${why ? `Мало данных о покупателе: ${why}. ` : 'Мало данных о покупателе. '}Оценка риска ориентировочная: взято среднее по отрасли и причине нехватки данных.`;
+}
+
+/**
+ * Расчёт приоритета для подсказки. Место в очереди и деление лимита покупателя считаются по доходу до уменьшения суммы
+ * до остатка лимита (п. 5.3): у уменьшенного предложения приоритет больше, чем доход банка × шанс.
+ */
+export function rankText(offer: Pick<Offer, 'income' | 'tr' | 'rank' | 'flags'>): string {
+  if (!offer.tr) return `Расчётный приоритет ${money(offer.rank)}`;
+  if (!offer.flags.reducedToLimit) return `${money(offer.income)} × шанс согласия ${percent(offer.tr)} = ${money(offer.rank)}`;
+  return `${money(offer.rank / offer.tr)} × шанс согласия ${percent(offer.tr)} = ${money(offer.rank)}. Это доход до уменьшения суммы до остатка лимита: по нему считаются место в очереди и деление лимита. После уменьшения доход банка — ${money(offer.income)}.`;
 }
