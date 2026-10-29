@@ -156,7 +156,8 @@ export interface Offer {
   el: number;
   tr: number | null;
   rank: number;
-  flags: { delayProbable: boolean; lowData: boolean; reducedToLimit: boolean; isNew: boolean };
+  /** lowDataReason - причина «мало данных» из источника (NO_RECENT_REPORT, LOW_REVENUE, YOUNG_COMPANY, EXCLUDED_INDUSTRY) */
+  flags: { delayProbable: boolean; lowData: boolean; reducedToLimit: boolean; isNew: boolean; lowDataReason?: string | null };
   reasons: Reason[] | null;
   reasonsText: string | null;
   messageDraft: string | null;

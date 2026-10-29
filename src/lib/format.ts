@@ -184,11 +184,11 @@ export const TEXT_SOURCES: Record<string, string> = {
   FAILED: 'сбой LLM',
 };
 
-/** Покупатель одной строкой: «ООО Ромашка · ИНН …»; без наименования (в партиях ML-команды оно «ИНН …») - только ИНН */
+/** Покупатель одной строкой: «ООО Ромашка, ИНН …»; без наименования (в партиях ML-команды оно «ИНН …») - только ИНН */
 export function buyerTitle(buyer: { name: string | null; inn: string | null } | null | undefined): string {
   if (!buyer) return '—';
   if (!buyer.name || buyer.name.startsWith('ИНН ')) return `ИНН ${buyer.inn ?? ''}`.trim();
-  return buyer.inn ? `${buyer.name} · ИНН ${buyer.inn}` : buyer.name;
+  return buyer.inn ? `${buyer.name}, ИНН ${buyer.inn}` : buyer.name;
 }
 
 export const STOP_FACTORS: Record<string, string> = {
@@ -229,4 +229,17 @@ export function lowerFirst(text: string): string {
 
 export function label(dictionary: Record<string, string>, code: string | null | undefined): string {
   return code ? (dictionary[code] ?? code) : '—';
+}
+
+/** Причины «мало данных» из источника (П3-5.1) */
+const LOW_DATA_REASONS: Record<string, string> = {
+  NO_RECENT_REPORT: 'нет отчётности за последний год',
+  LOW_REVENUE: 'выручка ниже 120 млн ₽',
+  YOUNG_COMPANY: 'компания моложе года',
+  EXCLUDED_INDUSTRY: 'отрасль, по которой модель не обучена',
+};
+
+export function lowDataText(reason: string | null | undefined): string {
+  const why = reason ? (LOW_DATA_REASONS[reason] ?? reason) : null;
+  return `${why ? `Мало данных о покупателе: ${why}. ` : 'Мало данных о покупателе. '}Оценка риска ориентировочная: взято среднее по отрасли и причине нехватки данных.`;
 }

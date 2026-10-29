@@ -11,7 +11,10 @@ export const RISK_SCALE: Record<RiskLevel, { word: string; title: string }> = {
   D: { word: 'высокий', title: 'высокий риск' },
 };
 
-/** Верхние границы вероятности дефолта уровней A–C (параметр scoring.risk_level_bounds); выше C - уровень D */
+/**
+ * Границы вероятности дефолта уровней A–C (параметр scoring.risk_level_bounds), строгие (П3-4): PD меньше границы A - уровень A,
+ * PD, равный границе, - уже следующий уровень; от границы C и выше - уровень D
+ */
 export type RiskBounds = Record<'A' | 'B' | 'C', number>;
 
 /** Значения по умолчанию - границы модели PD (Р-65), пока параметры не загрузились */
@@ -37,11 +40,13 @@ export function riskScaleText(level: RiskLevel, bounds: RiskBounds): string {
   const pct = (value: number) => (value * 100).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
   if (level === 'A') {
     const verb = bounds.A * 100 <= 1 ? 'не сможет' : 'не смогут';
-    return `Не больше ${pct(bounds.A)} из 100 таких компаний за год ${verb} расплатиться по долгам (вероятность до ${pct(bounds.A)} %).`;
+    return `Меньше ${pct(bounds.A)} из 100 таких компаний за год ${verb} расплатиться по долгам (вероятность меньше ${pct(bounds.A)} %).`;
   }
-  if (level === 'B') return `От ${pct(bounds.A)} до ${pct(bounds.B)} из 100 (вероятность до ${pct(bounds.B)} %).`;
-  if (level === 'C') return `От ${pct(bounds.B)} до ${pct(bounds.C)} из 100 (вероятность до ${pct(bounds.C)} %).`;
-  return `Больше ${pct(bounds.C)} из 100. Факторинг таким покупателям не предлагаем.`;
+  if (level === 'B')
+    return `От ${pct(bounds.A)} до ${pct(bounds.B)} из 100 (вероятность от ${pct(bounds.A)} % и меньше ${pct(bounds.B)} %).`;
+  if (level === 'C')
+    return `От ${pct(bounds.B)} до ${pct(bounds.C)} из 100 (вероятность от ${pct(bounds.B)} % и меньше ${pct(bounds.C)} %).`;
+  return `${pct(bounds.C)} из 100 и больше. Факторинг таким покупателям не предлагаем.`;
 }
 
 export const RISK_HELP_TITLE = 'Что значат уровни риска';

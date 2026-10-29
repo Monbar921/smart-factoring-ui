@@ -14,6 +14,7 @@ import {
   REASONS,
   TEXT_SOURCES,
   buyerTitle,
+  lowDataText,
   date,
   dateTime,
   label,
@@ -75,8 +76,10 @@ export function CrmPage() {
             <CardHeader className="px-5">
               <CardTitle className="text-base">Очередь предложений для клиентов на обработку</CardTitle>
               <CardDescription>
-                Сверху те предложения, которые вероятнее всего принесут больше дохода. Ожидаемый доход равен доходу банка,
-                умноженному на вероятность, что клиент согласится.
+                Сверху предложения, которые вероятнее всего принесут банку больше дохода. Расчётный приоритет = доход банка ×
+                шанс, что клиент согласится. Шанс считается по профилю клиента: базово 7%, выше — если у клиента мало денег на
+                счёте или отсрочка по договору 60 дней и больше. Пример: 25 000 ₽ при шансе 15,75% (приоритет 3 938) стоит выше,
+                чем 40 000 ₽ при шансе 7% (приоритет 2 800).
               </CardDescription>
             </CardHeader>
             <CardContent className="px-3">
@@ -106,6 +109,13 @@ export function CrmPage() {
                       </Hint>
                     </TableHead>
                     <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
+                      <Hint text="Столько заработает банк, если клиент согласится.">
+                        Доход
+                        <br />
+                        банка, ₽
+                      </Hint>
+                    </TableHead>
+                    <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
                       <Hint text="Сколько дней банк ждёт деньги от покупателя: дни до плановой оплаты плюс ожидаемая задержка.">
                         Срок
                         <br />
@@ -126,12 +136,12 @@ export function CrmPage() {
                     </TableHead>
                     <TableHead className="h-auto py-2 text-right align-bottom leading-tight whitespace-normal">
                       <Hint
-                        text="Шанс согласия сейчас оценивается правилом: базово 7%, увеличивается, если у клиента мало денег на счёте или отсрочка по договору 60 дней и больше."
+                        text="Доход банка × шанс, что клиент согласится. Шанс считается по профилю клиента: базово 7%, выше — если у клиента мало денег на счёте или отсрочка по договору 60 дней и больше."
                         align="end"
                       >
-                        Ожидаемый
+                        Расчётный
                         <br />
-                        доход, ₽
+                        приоритет, ₽
                       </Hint>
                     </TableHead>
                     <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-normal">Пометки</TableHead>
@@ -159,6 +169,7 @@ export function CrmPage() {
                         <div>{money(item.price)}</div>
                         <div className="text-xs text-muted-foreground">{percent(item.priceRate)} год.</div>
                       </TableCell>
+                      <TableCell className="text-right whitespace-nowrap tabular-nums">{money(item.income)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap tabular-nums">{item.termDays} дн.</TableCell>
                       <TableCell className="whitespace-nowrap">
                         <RiskBadge level={item.riskLevel} /> <span className="text-xs">{RISK_SCALE[item.riskLevel].word}</span>
@@ -166,7 +177,7 @@ export function CrmPage() {
                       <TableCell className="text-right tabular-nums">
                         <Hint
                           align="end"
-                          text={`Доход банка ${money(item.income)} × шанс, что клиент согласится, ${percent(item.tr)}`}
+                          text={`${money(item.income)} × шанс согласия ${percent(item.tr)} = ${money(item.rank)}`}
                         >
                           {money(item.rank)}
                         </Hint>
@@ -214,7 +225,7 @@ function OfferFlags({ offer }: { offer: Offer }) {
         </Hint>
       )}
       {offer.flags.lowData && (
-        <Hint text="У покупателя нет свежей отчётности, оценка риска ориентировочная: взято среднее по отрасли и размеру.">
+        <Hint text={lowDataText(offer.flags.lowDataReason)}>
           <Badge variant="outline">мало данных</Badge>
         </Hint>
       )}
