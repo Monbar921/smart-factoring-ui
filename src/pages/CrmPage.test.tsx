@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { Offer } from '@/api/types';
 import { mockApi } from '@/test/mockApi';
 import { renderWithQuery } from '@/test/render';
+import { lowDataText } from '@/lib/format';
 import { CrmPage } from './CrmPage';
 
 vi.mock('react-oidc-context', () => ({
@@ -113,5 +114,14 @@ describe('CrmPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Да, передать' }));
 
     expect(calls.some((call) => call.method === 'POST' && call.url === '/api/backend/offers/11/transfer')).toBe(true);
+  });
+});
+
+describe('пометка «мало данных» (П3-5)', () => {
+  it('называет причину из источника', () => {
+    expect(lowDataText('YOUNG_COMPANY')).toBe(
+      'Мало данных о покупателе: компания моложе года. Оценка риска ориентировочная: взято среднее по отрасли и причине нехватки данных.',
+    );
+    expect(lowDataText(null)).toContain('Мало данных о покупателе. Оценка');
   });
 });

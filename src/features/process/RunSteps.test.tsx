@@ -45,14 +45,14 @@ describe('шкала риска в справке - по порогам сист
     const { riskBoundsOf, riskScaleText } = await import('@/lib/risk');
     const bounds = riskBoundsOf([{ code: 'scoring.risk_level_bounds', value: '{"A": 0.01, "B": 0.03, "C": 0.08}' }]);
     expect(riskScaleText('A', bounds)).toBe(
-      'Не больше 1 из 100 таких компаний за год не сможет расплатиться по долгам (вероятность до 1 %).',
+      'Меньше 1 из 100 таких компаний за год не сможет расплатиться по долгам (вероятность меньше 1 %).',
     );
-    expect(riskScaleText('B', bounds)).toBe('От 1 до 3 из 100 (вероятность до 3 %).');
-    expect(riskScaleText('D', bounds)).toBe('Больше 8 из 100. Факторинг таким покупателям не предлагаем.');
+    expect(riskScaleText('B', bounds)).toBe('От 1 до 3 из 100 (вероятность от 1 % и меньше 3 %).');
+    expect(riskScaleText('D', bounds)).toBe('8 из 100 и больше. Факторинг таким покупателям не предлагаем.');
     // другие пороги в параметрах - другие числа в справке
     expect(
       riskScaleText('A', riskBoundsOf([{ code: 'scoring.risk_level_bounds', value: '{"A": 0.004, "B": 0.015, "C": 0.06}' }])),
-    ).toContain('Не больше 0,4 из 100');
+    ).toContain('Меньше 0,4 из 100');
     // без параметра или с неверным значением - значения по умолчанию
     expect(riskBoundsOf(undefined)).toEqual({ A: 0.004, B: 0.015, C: 0.06 });
     expect(riskBoundsOf([{ code: 'scoring.risk_level_bounds', value: 'не json' }])).toEqual({ A: 0.004, B: 0.015, C: 0.06 });
