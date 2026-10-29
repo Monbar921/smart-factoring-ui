@@ -54,7 +54,7 @@ describe('шкала риска в справке - по порогам сист
       riskScaleText('A', riskBoundsOf([{ code: 'scoring.risk_level_bounds', value: '{"A": 0.004, "B": 0.015, "C": 0.06}' }])),
     ).toContain('Не больше 0,4 из 100');
     // без параметра или с неверным значением - значения по умолчанию
-    expect(riskBoundsOf(undefined)).toEqual({ A: 0.01, B: 0.03, C: 0.08 });
-    expect(riskBoundsOf([{ code: 'scoring.risk_level_bounds', value: 'не json' }])).toEqual({ A: 0.01, B: 0.03, C: 0.08 });
+    expect(riskBoundsOf(undefined)).toEqual({ A: 0.004, B: 0.015, C: 0.06 });
+    expect(riskBoundsOf([{ code: 'scoring.risk_level_bounds', value: 'не json' }])).toEqual({ A: 0.004, B: 0.015, C: 0.06 });
   });
 });

@@ -14,8 +14,8 @@ export const RISK_SCALE: Record<RiskLevel, { word: string; title: string }> = {
 /** Верхние границы вероятности дефолта уровней A–C (параметр scoring.risk_level_bounds); выше C - уровень D */
 export type RiskBounds = Record<'A' | 'B' | 'C', number>;
 
-/** Значения по умолчанию (Р-13) - пока параметры не загрузились */
-export const DEFAULT_RISK_BOUNDS: RiskBounds = { A: 0.01, B: 0.03, C: 0.08 };
+/** Значения по умолчанию - границы модели PD (Р-65), пока параметры не загрузились */
+export const DEFAULT_RISK_BOUNDS: RiskBounds = { A: 0.004, B: 0.015, C: 0.06 };
 
 /** Границы уровней из параметров системы; без параметра или с неверным значением - по умолчанию */
 export function riskBoundsOf(parameters: { code: string; value: string }[] | undefined): RiskBounds {
