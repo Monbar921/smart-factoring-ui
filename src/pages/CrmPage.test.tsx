@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { Offer } from '@/api/types';
 import { mockApi } from '@/test/mockApi';
 import { renderWithQuery } from '@/test/render';
-import { lowDataText } from '@/lib/format';
+import { lowDataText, rankText } from '@/lib/format';
 import { CrmPage } from './CrmPage';
 
 vi.mock('react-oidc-context', () => ({
@@ -123,5 +123,19 @@ describe('пометка «мало данных» (П3-5)', () => {
       'Мало данных о покупателе: компания моложе года. Оценка риска ориентировочная: взято среднее по отрасли и причине нехватки данных.',
     );
     expect(lowDataText(null)).toContain('Мало данных о покупателе. Оценка');
+  });
+});
+
+describe('подсказка расчётного приоритета (П3-2)', () => {
+  const flags = { delayProbable: false, lowData: false, reducedToLimit: false, isNew: false };
+  // Intl разделяет разряды неразрывным пробелом
+  const plain = (text: string) => text.replace(/\s/g, ' ');
+  it('доход × шанс = приоритет', () => {
+    expect(plain(rankText({ income: 47508, tr: 0.1575, rank: 7483, flags }))).toBe('47 508 ₽ × шанс согласия 15,75 % = 7 483 ₽');
+  });
+  it('после уменьшения до остатка лимита - доход до уменьшения', () => {
+    const text = plain(rankText({ income: 53761, tr: 0.1575, rank: 11817, flags: { ...flags, reducedToLimit: true } }));
+    expect(text).toContain('75 029 ₽ × шанс согласия 15,75 % = 11 817 ₽');
+    expect(text).toContain('доход банка — 53 761 ₽');
   });
 });
