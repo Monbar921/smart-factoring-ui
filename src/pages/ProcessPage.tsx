@@ -17,9 +17,18 @@ import { openRun } from '@/lib/useHashRoute';
 /**
  * Экран процесса (ЭП-1…ЭП-6, ЭП-9) по макету рис. 4 BRD: слева запуск и ход прогона по шагам,
  * справа воронка УПД, детализация и сравнение с ручной работой, внизу журнал и версии.
- * canOperate - роль operator: запуск прогона; без неё - только просмотр. runId - прогон из ссылки, иначе последний.
+ * canOperate - роль operator: запуск прогона; без неё - только просмотр. viewOnly - гость: форма запуска видна,
+ * кнопка неактивна (П4-1). runId - прогон из ссылки, иначе последний.
  */
-export function ProcessPage({ canOperate = true, runId: requested = null }: { canOperate?: boolean; runId?: number | null }) {
+export function ProcessPage({
+  canOperate = true,
+  viewOnly = false,
+  runId: requested = null,
+}: {
+  canOperate?: boolean;
+  viewOnly?: boolean;
+  runId?: number | null;
+}) {
   const runs = useRuns();
   const runId = requested ?? runs.data?.items[0]?.id ?? null;
   const run = useRun(runId);
@@ -28,7 +37,7 @@ export function ProcessPage({ canOperate = true, runId: requested = null }: { ca
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.9fr)]">
         <div className="flex flex-col gap-5">
-          <LaunchCard run={run.data} canOperate={canOperate} onStarted={openRun} />
+          <LaunchCard run={run.data} canOperate={canOperate} viewOnly={viewOnly} onStarted={openRun} />
           {run.data && <RunSteps run={run.data} />}
         </div>
         <div className="flex min-w-0 flex-col gap-5">

@@ -200,6 +200,7 @@ export const STOP_FACTORS: Record<string, string> = {
 
 export const NOTIFICATION_TYPES: Record<string, string> = {
   NEW_OFFER: 'Новое предложение',
+  OFFER_CHANGED: 'Условия изменились',
   OVERDUE: 'Просрочка оплаты',
   REMINDER: 'Напоминание',
   RISK_SIGNAL: 'Сигнал в риск',
@@ -253,4 +254,18 @@ export function rankText(offer: Pick<Offer, 'income' | 'tr' | 'rank' | 'flags'>)
   if (!offer.tr) return `Расчётный приоритет ${money(offer.rank)}`;
   if (!offer.flags.reducedToLimit) return `${money(offer.income)} × шанс согласия ${percent(offer.tr)} = ${money(offer.rank)}`;
   return `${money(offer.rank / offer.tr)} × шанс согласия ${percent(offer.tr)} = ${money(offer.rank)}. Это доход до уменьшения суммы до остатка лимита: по нему считаются место в очереди и деление лимита. После уменьшения доход банка — ${money(offer.income)}.`;
+}
+
+/** Причины отказа в запуске прогона (П4-6) */
+export const RUN_REJECT_REASONS: Record<string, string> = {
+  FORBIDDEN: 'нет прав',
+  RUN_ALREADY_DONE: 'эти данные уже прогнаны',
+  RUN_ALREADY_RUNNING: 'прогон уже идёт',
+  VALIDATION_ERROR: 'неверный запрос',
+};
+
+/** «demo (гость)», «ivanov (operator)»; без логина - запуск вызовом API */
+export function initiatorText(initiator: string | null, role: string | null): string {
+  if (!initiator) return 'API';
+  return role ? `${initiator} (${role})` : initiator;
 }

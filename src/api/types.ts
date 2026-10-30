@@ -72,10 +72,25 @@ export interface RunListItem {
   finishedAt: string | null;
   durationMs: number | null;
   initiator: string | null;
+  /** роли запустившего: operator, manager (П4-6) */
+  initiatorRole: string | null;
   clientCount: number | null;
   openUpdCount: number | null;
   offerCount: number | null;
   eadTotal: number | null;
+}
+
+/** Попытка запуска прогона, и отклонённая (П4-6) */
+export interface RunAttempt {
+  id: number;
+  attemptedAt: string;
+  initiator: string | null;
+  initiatorRole: string | null;
+  outcome: 'STARTED' | 'REJECTED';
+  /** FORBIDDEN, RUN_ALREADY_DONE, RUN_ALREADY_RUNNING, VALIDATION_ERROR */
+  reason: string | null;
+  message: string | null;
+  runId: number | null;
 }
 
 export interface LogEntry {
@@ -185,7 +200,7 @@ export interface Manager {
 export interface Notification {
   id: number;
   runId: number;
-  type: 'NEW_OFFER' | 'OVERDUE' | 'REMINDER' | 'RISK_SIGNAL';
+  type: 'NEW_OFFER' | 'OFFER_CHANGED' | 'OVERDUE' | 'REMINDER' | 'RISK_SIGNAL';
   createdAt: string;
   client: Ref | null;
   buyer: Ref | null;

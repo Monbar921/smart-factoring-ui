@@ -1,7 +1,8 @@
 import { Bell, Check, Copy, Send, ShieldAlert, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useClientCard, useManagers, useNotifications, useOfferDecision, useParameters, useQueue } from '@/api/backend';
 import type { CardUpd, Offer, RiskLevel } from '@/api/types';
+import { GuestLock } from '@/components/GuestLock';
 import { HelpButton, Hint } from '@/components/Hint';
 import { ErrorNote, RiskBadge } from '@/components/StatusBadges';
 import { Badge } from '@/components/ui/badge';
@@ -36,10 +37,12 @@ import {
 import { cn } from '@/lib/utils';
 
 /** Эмулятор CRM (ЭП-7): очередь предложений и карточка клиента так, как их получает CRM по API (п. 5.5) */
-export function CrmPage() {
+export function CrmPage({ viewOnly = false }: { viewOnly?: boolean }) {
   const managers = useManagers();
   const [selectedManagerId, setManagerId] = useState<number | null>(null);
   const [offerId, setOfferId] = useState<number | null>(null);
+  // переход из карточки клиента: карточка предложения прокручивается в видимую часть и подсвечивается (П4-7)
+  const [focusRequest, setFocusRequest] = useState(0);
   const [clientId, setClientId] = useState<number | null>(null);
   // в демо один менеджер (Р-17): по умолчанию - первый из списка
   const managerId = selectedManagerId ?? managers.data?.[0]?.id ?? null;
@@ -198,11 +201,23 @@ export function CrmPage() {
               {queue.data?.length === 0 && <p className="px-2 py-4 text-sm text-muted-foreground">Очередь пуста.</p>}
             </CardContent>
           </Card>
-          {clientId !== null && <ClientCardView clientId={clientId} onSelectOffer={setOfferId} />}
+          {clientId !== null && (
+            <ClientCardView
+              clientId={clientId}
+              onSelectOffer={(id) => {
+                setOfferId(id);
+                setFocusRequest((request) => request + 1);
+              }}
+            />
+          )}
         </div>
 
         <aside className="flex flex-col gap-6">
-          {offer ? <OfferCard offer={offer} onDone={() => setOfferId(null)} /> : <OfferHint />}
+          {offer ? (
+            <OfferCard offer={offer} viewOnly={viewOnly} focusRequest={focusRequest} onDone={() => setOfferId(null)} />
+          ) : (
+            <OfferHint />
+          )}
           <Notifications managerId={managerId} />
         </aside>
       </div>
@@ -274,8 +289,34 @@ function OfferHint() {
 }
 
 /** Карточка предложения (п. 5.3, пункт 4) и решение менеджера (блок 6) */
-function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
+function OfferCard({
+  offer,
+  viewOnly,
+  focusRequest,
+  onDone,
+}: {
+  offer: Offer;
+  viewOnly: boolean;
+  focusRequest: number;
+  onDone: () => void;
+}) {
   const decision = useOfferDecision();
+  const card = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = card.current;
+    if (focusRequest === 0 || !element) return;
+    // методов нет в jsdom - вызываются, только если есть
+    element.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+    element.focus({ preventScroll: true });
+    element.animate?.(
+      [
+        { boxShadow: '0 0 0 4px var(--color-primary)' },
+        { boxShadow: '0 0 0 4px var(--color-primary)' },
+        { boxShadow: '0 0 0 0 transparent' },
+      ],
+      { duration: 1800, easing: 'ease-out' },
+    );
+  }, [focusRequest, offer.offerId]);
   const [copied, setCopied] = useState(false);
   // решение необратимо (предложение уходит из очереди, пакет - в ВТБ Факторинг): сначала подтверждение
   const [confirming, setConfirming] = useState<'transfer' | 'reject' | null>(null);
@@ -284,7 +325,7 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
     decision.mutate({ offerId: offer.offerId, action }, { onSuccess: () => onDone(), onSettled: () => setConfirming(null) });
 
   return (
-    <Card className="gap-4 py-5" aria-label="Карточка предложения">
+    <Card ref={card} tabIndex={-1} className="gap-4 py-5 outline-none" aria-label="Карточка предложения">
       <CardHeader className="px-5">
         <CardTitle className="text-base">
           {offer.client.name}: {updLabel(offer.updNumber)} от {date(offer.updDate)}
@@ -387,14 +428,18 @@ function OfferCard({ offer, onDone }: { offer: Offer; onDone: () => void }) {
 
         {confirming === null ? (
           <div className="flex gap-2">
-            <Button className="flex-1" onClick={() => setConfirming('transfer')} disabled={decision.isPending}>
-              <Send aria-hidden />
-              Передать в факторинг
-            </Button>
-            <Button variant="outline" onClick={() => setConfirming('reject')} disabled={decision.isPending}>
-              <X aria-hidden />
-              Отклонить
-            </Button>
+            <GuestLock locked={viewOnly} text="Решение по предложению принимает менеджер">
+              <Button className="flex-1" onClick={() => setConfirming('transfer')} disabled={viewOnly || decision.isPending}>
+                <Send aria-hidden />
+                Передать в факторинг
+              </Button>
+            </GuestLock>
+            <GuestLock locked={viewOnly} text="Решение по предложению принимает менеджер">
+              <Button variant="outline" onClick={() => setConfirming('reject')} disabled={viewOnly || decision.isPending}>
+                <X aria-hidden />
+                Отклонить
+              </Button>
+            </GuestLock>
           </div>
         ) : (
           <div className="flex flex-col gap-2 rounded-md border border-primary/40 bg-primary/5 p-3" role="alertdialog">
@@ -452,6 +497,9 @@ function Notifications({ managerId }: { managerId: number | null }) {
                   ? ` · остаток ${money(Number(item.payload.outstanding))}, ${String(item.payload.overdueDays)} дн. просрочки`
                   : ''}
                 {item.type === 'NEW_OFFER' && item.payload ? ` · ${money(Number(item.payload.ead))}` : ''}
+                {item.type === 'OFFER_CHANGED' && item.payload
+                  ? ` · ${money(Number(item.payload.previousEad))} → ${money(Number(item.payload.ead))}`
+                  : ''}
                 {item.type === 'RISK_SIGNAL' && item.buyer ? ` · покупатель ${item.buyer.name ?? item.buyer.inn}` : ''}
               </div>
             </li>
@@ -543,10 +591,12 @@ function ClientCardView({ clientId, onSelectOffer }: { clientId: number; onSelec
                 </TableCell>
                 <TableCell>
                   {upd.offerId !== null ? (
-                    <Button variant="link" size="sm" className="h-auto p-0" onClick={() => onSelectOffer(upd.offerId!)}>
-                      <Check aria-hidden />
-                      открыть
-                    </Button>
+                    <Hint plain text="Открыть карточку предложения">
+                      <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => onSelectOffer(upd.offerId!)}>
+                        <Check aria-hidden />
+                        Предложение сформировано
+                      </Button>
+                    </Hint>
                   ) : (
                     <span className="text-xs">{noOffer(upd)}</span>
                   )}

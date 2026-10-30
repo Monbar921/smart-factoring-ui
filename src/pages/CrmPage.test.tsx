@@ -1,6 +1,6 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Offer } from '@/api/types';
+import type { CardUpd, Offer } from '@/api/types';
 import { mockApi } from '@/test/mockApi';
 import { renderWithQuery } from '@/test/render';
 import { lowDataText, rankText } from '@/lib/format';
@@ -137,5 +137,59 @@ describe('подсказка расчётного приоритета (П3-2)',
     const text = plain(rankText({ income: 53761, tr: 0.1575, rank: 11817, flags: { ...flags, reducedToLimit: true } }));
     expect(text).toContain('75 029 ₽ × шанс согласия 15,75 % = 11 817 ₽');
     expect(text).toContain('доход банка — 53 761 ₽');
+  });
+});
+
+describe('гость и переход из карточки клиента (П4-2, П4-7)', () => {
+  it('гостю решения закрыты, «Предложение сформировано» открывает карточку предложения', async () => {
+    const upd: CardUpd = {
+      updId: 104,
+      number: 'U-1004',
+      updDate: '2026-10-01',
+      buyer: OFFER.buyer,
+      amount: 5000000,
+      outstanding: 5000000,
+      plannedDueDate: '2026-11-10',
+      daysToDue: 17,
+      category: 4,
+      pd: 0.005,
+      riskLevel: 'A',
+      pDelay: 0.07,
+      pOverdue90: null,
+      expectedDelayDays: null,
+      reasons: null,
+      offerId: 11,
+      noOfferReason: null,
+      offerStatus: 'QUEUED',
+    };
+    const calls = mockApi({
+      'GET /api/backend/managers': [{ id: 1, code: 'M1', fullName: 'Демо-менеджер', queuedOffers: 1, notifications: 0 }],
+      'GET /api/backend/managers/1/queue': [OFFER],
+      'GET /api/backend/managers/1/notifications': { items: [], page: 0, size: 200, total: 0 },
+      'GET /api/backend/clients/1/card': {
+        client: OFFER.client,
+        absLiquidity: 0.35,
+        runId: 7,
+        calcDate: '2026-10-24',
+        dataDate: '2026-10-24',
+        snapshotDate: '2026-10-20',
+        summary: { receivablesTotal: 5000000, overdue: 0, availableForFinancing: 4500000, cashGap: null },
+        offers: [OFFER],
+        decidedOffers: [],
+        upds: [upd],
+      },
+    });
+
+    renderWithQuery(<CrmPage viewOnly />);
+    // карточка клиента открывается кликом по клиенту в очереди
+    await userEvent.click(await screen.findByText('ООО «Альфа-Трейд»'));
+    const link = await screen.findByRole('button', { name: 'Предложение сформировано' });
+    await userEvent.click(link);
+
+    const card = await screen.findByLabelText('Карточка предложения');
+    expect(card).toHaveFocus();
+    expect(within(card).getByRole('button', { name: 'Передать в факторинг' })).toBeDisabled();
+    expect(within(card).getByRole('button', { name: 'Отклонить' })).toBeDisabled();
+    expect(calls.some((call) => call.method === 'POST')).toBe(false);
   });
 });

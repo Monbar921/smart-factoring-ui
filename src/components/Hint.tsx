@@ -56,11 +56,14 @@ export function Hint({
   children,
   className,
   align = 'start',
+  plain = false,
 }: {
   text: ReactNode;
   children: ReactNode;
   className?: string;
   align?: 'start' | 'end';
+  /** без пунктирного подчёркивания: подсказка у кнопки, а не у текста */
+  plain?: boolean;
 }) {
   const id = useId();
   const anchor = useRef<HTMLSpanElement>(null);
@@ -80,7 +83,12 @@ export function Hint({
         aria-describedby={id}
         onFocus={() => setFocus(true)}
         onBlur={() => setFocus(false)}
-        className="cursor-help underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring"
+        className={cn(
+          'focus-visible:outline-2 focus-visible:outline-ring',
+          plain
+            ? 'inline-flex cursor-not-allowed rounded-md'
+            : 'cursor-help underline decoration-muted-foreground/50 decoration-dotted underline-offset-4',
+        )}
       >
         {children}
       </span>
