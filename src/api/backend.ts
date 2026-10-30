@@ -12,6 +12,7 @@ import type {
   Page,
   Run,
   RunDefaults,
+  RunAttempt,
   RunListItem,
   RunUpd,
   UpdTrace,
@@ -68,6 +69,16 @@ export function useRuns() {
   });
 }
 
+/** Попытки запуска прогона, и отклонённые (П4-6) */
+export function useRunAttempts() {
+  const token = useToken();
+  return useQuery({
+    queryKey: ['runs', 'attempts'],
+    queryFn: () => apiJson<Page<RunAttempt>>(`${BASE}/runs/attempts?size=20`, token!),
+    enabled: Boolean(token),
+  });
+}
+
 /** Прогон с шагами; пока выполняется - опрос раз в 2 с */
 export function useRun(runId: number | null) {
   const token = useToken();
@@ -83,7 +94,8 @@ export function useStartRun() {
   const token = useToken();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (request: { clientInns: string[] | null; calcDate: string | null }) =>
+    // force - «Прогнать заново»: те же данные, что у прежнего прогона (П4-3)
+    mutationFn: (request: { clientInns: string[] | null; calcDate: string | null; force?: boolean }) =>
       apiJson<{ runId: number }>(`${BASE}/runs`, token!, 'POST', request),
     onSettled: () => client.invalidateQueries({ queryKey: ['runs'] }),
   });

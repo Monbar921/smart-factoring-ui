@@ -8,19 +8,20 @@ import { ProcessPage } from '@/pages/ProcessPage';
 
 /**
  * Рабочее место: экран процесса и история прогонов (оператор), эмулятор CRM (менеджер).
- * Экран процесса и историю менеджер видит только для просмотра.
+ * Экран процесса и историю менеджер видит только для просмотра. Гость видит все экраны, но действия ему закрыты:
+ * кнопки неактивны, с подсказкой (П4-1, П4-2).
  */
 export function HomePage() {
   const requested = useHashRoute();
   const roles = useRoles();
   const sections: Route[] = [];
-  if (roles.operator || roles.manager) {
+  if (roles.operator || roles.manager || roles.viewer) {
     sections.push('process');
   }
-  if (roles.manager) {
+  if (roles.manager || roles.viewer) {
     sections.push('crm');
   }
-  if (roles.operator || roles.manager) {
+  if (roles.operator || roles.manager || roles.viewer) {
     sections.push('history');
   }
   // недоступный раздел из ссылки - открываем первый доступный
@@ -30,9 +31,9 @@ export function HomePage() {
     <div className="min-h-svh">
       <AppHeader route={route} sections={sections} />
       <main className="mx-auto max-w-[96rem] px-4 py-5 sm:px-6">
-        {route === 'crm' && <CrmPage />}
-        {route === 'process' && <ProcessPage canOperate={roles.operator} runId={requested.runId} />}
-        {route === 'history' && <HistoryPage canOperate={roles.operator} />}
+        {route === 'crm' && <CrmPage viewOnly={roles.viewer} />}
+        {route === 'process' && <ProcessPage canOperate={roles.operator} viewOnly={roles.viewer} runId={requested.runId} />}
+        {route === 'history' && <HistoryPage canOperate={roles.operator} viewOnly={roles.viewer} />}
         {route === undefined && (
           <Alert>
             <AlertTitle>Нет доступа</AlertTitle>

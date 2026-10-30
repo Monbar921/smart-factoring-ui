@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { buyerTitle, updLabel } from '@/lib/format';
-import { mockApi } from '@/test/mockApi';
+import { apiError, mockApi } from '@/test/mockApi';
 import { renderWithQuery } from '@/test/render';
 import { LaunchCard } from './LaunchCard';
 
@@ -87,5 +87,44 @@ describe('запуск прогона по выбранным клиентам',
   it('номер УПД со словом «УПД» - без повтора', () => {
     expect(updLabel('U-1004')).toBe('УПД U-1004');
     expect(updLabel('УПД-0255')).toBe('УПД-0255');
+  });
+});
+
+describe('повторный прогон и гость (П4-1, П4-3)', () => {
+  const defaults = { dataDate: '2026-10-24', snapshotDate: '2026-10-20', clients: [], runningRunId: null };
+
+  it('те же данные: сообщение со ссылкой на прежний прогон, «Прогнать заново» - с подтверждением', async () => {
+    const opened: number[] = [];
+    const calls = mockApi({
+      'GET /api/backend/runs/defaults': defaults,
+      'POST /api/backend/runs': (body: unknown) =>
+        (body as { force?: boolean }).force
+          ? { runId: 12 }
+          : apiError(409, 'RUN_ALREADY_DONE', 'Эти данные уже прогнаны', { runId: 11, startedAt: '2026-10-30T09:15:00Z' }),
+    });
+    renderWithQuery(<LaunchCard run={undefined} canOperate onStarted={(id) => opened.push(id)} />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Запустить прогон' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Эти данные уже прогнаны. Результат — прогон № 11 от');
+    await userEvent.click(screen.getByRole('button', { name: 'Открыть прогон № 11' }));
+    expect(opened).toEqual([11]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Прогнать заново' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Да, прогнать заново' }));
+    expect(calls.filter((call) => call.method === 'POST').map((call) => (call.body as { force: boolean }).force)).toEqual([
+      false,
+      true,
+    ]);
+    expect(opened).toEqual([11, 12]);
+  });
+
+  it('гость видит форму, кнопка запуска неактивна, с подсказкой', async () => {
+    const calls = mockApi({ 'GET /api/backend/runs/defaults': defaults });
+    renderWithQuery(<LaunchCard run={undefined} canOperate={false} viewOnly onStarted={() => {}} />);
+
+    const button = await screen.findByRole('button', { name: 'Запустить прогон' });
+    expect(button).toBeDisabled();
+    expect(screen.getByRole('tooltip', { hidden: true })).toHaveTextContent('Запуск прогона доступен менеджеру');
+    expect(calls.some((call) => call.method === 'POST')).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Run } from '@/api/types';
 import { mockApi } from '@/test/mockApi';
@@ -176,7 +176,7 @@ describe('ProcessPage', () => {
     await userEvent.click(button);
 
     const post = calls.find((call) => call.method === 'POST');
-    expect(post?.body).toEqual({ clientInns: null, calcDate: '2026-10-24' });
+    expect(post?.body).toEqual({ clientInns: null, calcDate: '2026-10-24', force: false });
   });
 
   it('кнопка запуска снова доступна, когда прогон закончился', async () => {
@@ -187,9 +187,12 @@ describe('ProcessPage', () => {
     });
 
     renderWithQuery(<ProcessPage />);
-    expect(await screen.findByRole('button', { name: 'Прогон выполняется…' })).toBeDisabled();
+    // П4-5: пока идёт прогон, кнопка неактивна, рядом - «Идёт прогон» со ссылкой на него
+    expect(await screen.findByRole('status')).toHaveTextContent('Идёт прогон № 8');
+    expect(screen.getByRole('button', { name: 'Запустить прогон' })).toBeDisabled();
 
     runningRunId = null;
-    expect(await screen.findByRole('button', { name: 'Запустить прогон' }, { timeout: 5000 })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Запустить прогон' })).toBeEnabled(), { timeout: 5000 });
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });

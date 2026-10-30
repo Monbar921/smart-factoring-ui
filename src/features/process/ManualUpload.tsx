@@ -2,6 +2,7 @@ import { Database, Trash2, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useManualUpload, useResetManualUpload } from '@/api/backend';
 import type { ImportIssue, ImportResult } from '@/api/types';
+import { GuestLock } from '@/components/GuestLock';
 import { ErrorNote } from '@/components/StatusBadges';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +39,7 @@ const SHOWN_ISSUES = 50;
  * Загрузка выгрузки генератора или партии ML-команды (Р-52, Р-54): дельта - новое добавляется, изменённое обновляется, ничего не удаляется,
  * история прогонов и решения менеджеров сохраняются. Итог - отчёт импорта.
  */
-export function ManualUploadCard() {
+export function ManualUploadCard({ locked = false }: { locked?: boolean }) {
   const upload = useManualUpload();
   const [path, setPath] = useState('');
 
@@ -62,26 +63,36 @@ export function ManualUploadCard() {
             value={path}
             onChange={(event) => setPath(event.target.value)}
             aria-label="Папка выгрузки на сервере"
+            disabled={locked}
           />
-          <Button variant="outline" disabled={!path || upload.isPending} onClick={() => upload.mutate({ path })}>
-            Импорт
-          </Button>
+          <GuestLock locked={locked}>
+            <Button variant="outline" disabled={locked || !path || upload.isPending} onClick={() => upload.mutate({ path })}>
+              Импорт
+            </Button>
+          </GuestLock>
         </div>
-        <label className={cn('flex cursor-pointer items-center gap-2 text-primary', upload.isPending && 'opacity-50')}>
-          <Upload className="size-4" aria-hidden />
-          <span>{upload.isPending ? 'Загрузка…' : 'ZIP-архив выгрузки'}</span>
-          <input
-            type="file"
-            accept=".zip"
-            className="sr-only"
-            disabled={upload.isPending}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) upload.mutate({ file });
-              event.target.value = '';
-            }}
-          />
-        </label>
+        <GuestLock locked={locked}>
+          <label
+            className={cn(
+              'flex items-center gap-2 text-primary',
+              locked || upload.isPending ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+            )}
+          >
+            <Upload className="size-4" aria-hidden />
+            <span>{upload.isPending ? 'Загрузка…' : 'ZIP-архив выгрузки'}</span>
+            <input
+              type="file"
+              accept=".zip"
+              className="sr-only"
+              disabled={locked || upload.isPending}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) upload.mutate({ file });
+                event.target.value = '';
+              }}
+            />
+          </label>
+        </GuestLock>
         <ErrorNote error={upload.error} />
         {upload.isSuccess && <ImportReport result={upload.data} />}
       </CardContent>
@@ -168,7 +179,7 @@ function ImportReport({ result }: { result: ImportResult }) {
 }
 
 /** Полная очистка: данные ручной загрузки, прогоны и решения менеджеров (параметры остаются) - отдельно от импорта */
-export function ManualUploadResetCard() {
+export function ManualUploadResetCard({ locked = false }: { locked?: boolean }) {
   const reset = useResetManualUpload();
   const [confirmed, setConfirmed] = useState(false);
 
@@ -185,17 +196,19 @@ export function ManualUploadResetCard() {
       </CardHeader>
       <CardContent className="flex flex-col gap-3 px-5 text-sm">
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
+          <input type="checkbox" checked={confirmed} disabled={locked} onChange={(event) => setConfirmed(event.target.checked)} />
           Понимаю, что данные, прогоны и решения будут удалены
         </label>
-        <Button
-          variant="destructive"
-          className="self-start"
-          disabled={!confirmed || reset.isPending}
-          onClick={() => reset.mutate(undefined, { onSuccess: () => setConfirmed(false) })}
-        >
-          Очистить все данные
-        </Button>
+        <GuestLock locked={locked}>
+          <Button
+            variant="destructive"
+            className="self-start"
+            disabled={locked || !confirmed || reset.isPending}
+            onClick={() => reset.mutate(undefined, { onSuccess: () => setConfirmed(false) })}
+          >
+            Очистить все данные
+          </Button>
+        </GuestLock>
         {reset.isSuccess && <p className="text-success">Данные очищены.</p>}
         <ErrorNote error={reset.error} />
       </CardContent>

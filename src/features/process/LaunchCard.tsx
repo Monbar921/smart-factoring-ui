@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRunDefaults, useStartRun } from '@/api/backend';
+import { ApiError } from '@/api/client';
 import type { Run } from '@/api/types';
+import { GuestLock } from '@/components/GuestLock';
 import { ErrorNote } from '@/components/StatusBadges';
 import { Button } from '@/components/ui/button';
-import { RUN_STATUSES, duration, label, plural } from '@/lib/format';
+import { RUN_STATUSES, dateTime, duration, label, plural } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Section } from './Section';
 
@@ -19,15 +21,18 @@ const STATUS_COLORS: Record<Run['status'], string> = {
 
 /**
  * ЭП-1: запуск прогона - набор клиентов и дата расчёта (по умолчанию последняя дата данных), под ними -
- * строка состояния показанного прогона. Без роли operator - только строка состояния.
+ * строка состояния показанного прогона. Без роли operator - только строка состояния; гостю (viewOnly) форма видна,
+ * кнопка неактивна (П4-1).
  */
 export function LaunchCard({
   run,
   canOperate,
+  viewOnly = false,
   onStarted,
 }: {
   run: Run | undefined;
   canOperate: boolean;
+  viewOnly?: boolean;
   onStarted: (runId: number) => void;
 }) {
   const defaults = useRunDefaults();
@@ -52,16 +57,30 @@ export function LaunchCard({
   const batchInns = batches.filter((batch) => selectedBatches.includes(batch.batchId)).flatMap((batch) => batch.clientInns);
   const clientInns = mode === 'all' ? null : mode === 'batches' ? batchInns : selected;
 
-  const running = defaults.data?.runningRunId != null || start.isPending;
+  const runningRunId = defaults.data?.runningRunId ?? null;
+  const running = runningRunId !== null || start.isPending;
   const noData = defaults.isSuccess && !defaults.data.dataDate;
+  const showForm = canOperate || viewOnly;
+  // «Прогнать заново» после отказа «Эти данные уже прогнаны» (П4-3)
+  const [confirmRepeat, setConfirmRepeat] = useState(false);
+  // быстрый двойной клик: второй запуск не уходит, пока не вернулся первый (П4-5)
+  const launching = useRef(false);
 
-  const launch = () => {
-    start.mutate({ clientInns, calcDate: calcDate || null }, { onSuccess: (result) => onStarted(result.runId) });
+  const launch = (force = false) => {
+    if (launching.current) return;
+    launching.current = true;
+    setConfirmRepeat(false);
+    start.mutate(
+      { clientInns, calcDate: calcDate || null, force },
+      { onSuccess: (result) => onStarted(result.runId), onSettled: () => (launching.current = false) },
+    );
   };
+  const error = start.error instanceof ApiError ? start.error : null;
+  const previousRunId = typeof error?.details?.runId === 'number' ? error.details.runId : null;
 
   return (
-    <Section title={canOperate ? 'Запуск прогона' : 'Прогон'}>
-      {canOperate && (
+    <Section title={showForm ? 'Запуск прогона' : 'Прогон'}>
+      {showForm && (
         <div className="flex flex-col gap-3">
           {/* поля не уже 16rem: если места не хватает, кнопка уходит под них, а не сжимает дату */}
           <div className="flex flex-wrap items-start gap-4">
@@ -93,14 +112,31 @@ export function LaunchCard({
               <span />
               <span className="text-xs text-muted-foreground italic">по умолчанию — последняя дата данных</span>
             </div>
-            <Button
-              size="lg"
-              className="h-auto min-h-16 px-6 text-base"
-              onClick={launch}
-              disabled={running || noData || (clientInns !== null && clientInns.length === 0)}
-            >
-              {running ? 'Прогон выполняется…' : 'Запустить прогон'}
-            </Button>
+            <div className="flex flex-col items-start gap-1">
+              <GuestLock locked={viewOnly} text="Запуск прогона доступен менеджеру">
+                <Button
+                  size="lg"
+                  className="h-auto min-h-16 px-6 text-base"
+                  onClick={() => launch()}
+                  disabled={viewOnly || running || noData || (clientInns !== null && clientInns.length === 0)}
+                >
+                  Запустить прогон
+                </Button>
+              </GuestLock>
+              {running && (
+                <p className="text-sm font-medium text-primary" role="status">
+                  Идёт прогон
+                  {runningRunId !== null && (
+                    <>
+                      {' '}
+                      <Button variant="link" className="h-auto p-0" onClick={() => onStarted(runningRunId)}>
+                        № {runningRunId}
+                      </Button>
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
           </div>
 
           {mode === 'batches' && (
@@ -200,16 +236,49 @@ export function LaunchCard({
           {noData && (
             <p className="text-sm text-muted-foreground">Нет данных: загрузите выгрузку на вкладке «История прогонов».</p>
           )}
-          <ErrorNote error={start.error} />
+          {error?.code === 'RUN_ALREADY_DONE' || error?.code === 'RUN_ALREADY_RUNNING' ? (
+            <div className="flex flex-col gap-2 rounded-md border border-primary/40 bg-primary/5 p-3 text-sm" role="alert">
+              <p>
+                {error.code === 'RUN_ALREADY_DONE'
+                  ? `Эти данные уже прогнаны. Результат — прогон № ${previousRunId} от ${dateTime(String(error.details?.startedAt ?? ''))}.`
+                  : `Прогон уже идёт: прогон № ${previousRunId}.`}{' '}
+                {previousRunId !== null && (
+                  <Button variant="link" className="h-auto p-0" onClick={() => onStarted(previousRunId)}>
+                    Открыть прогон № {previousRunId}
+                  </Button>
+                )}
+              </p>
+              {error.code === 'RUN_ALREADY_DONE' && !confirmRepeat && (
+                <Button variant="outline" className="self-start" onClick={() => setConfirmRepeat(true)}>
+                  Прогнать заново
+                </Button>
+              )}
+              {confirmRepeat && (
+                <div className="flex flex-col gap-2" role="alertdialog">
+                  <p>Прогнать те же данные заново? Предложения в очереди обновятся, решения менеджеров сохранятся.</p>
+                  <div className="flex gap-2">
+                    <Button onClick={() => launch(true)} disabled={running}>
+                      Да, прогнать заново
+                    </Button>
+                    <Button variant="outline" onClick={() => setConfirmRepeat(false)}>
+                      Отмена
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <ErrorNote error={start.error} />
+          )}
         </div>
       )}
       {run && (
-        <p className={cn('text-sm font-semibold', canOperate && 'mt-3', STATUS_COLORS[run.status])}>
+        <p className={cn('text-sm font-semibold', showForm && 'mt-3', STATUS_COLORS[run.status])}>
           Прогон № {run.id} · {label(RUN_STATUSES, run.status).toLowerCase()}
           {run.status === 'RUNNING' ? ` · шаг ${currentStep(run)} из ${run.steps.length}` : ` · ${duration(run.durationMs)}`}
         </p>
       )}
-      {!run && !canOperate && <p className="text-sm text-muted-foreground">Прогонов ещё не было.</p>}
+      {!run && !showForm && <p className="text-sm text-muted-foreground">Прогонов ещё не было.</p>}
     </Section>
   );
 }
