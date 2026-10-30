@@ -43,7 +43,9 @@ export function ProcessPage({
         <div className="flex min-w-0 flex-col gap-5">
           {runId === null && runs.isSuccess && (
             <p className="text-muted-foreground">
-              {canOperate ? 'Запустите прогон или выберите его в истории прогонов.' : 'Выберите прогон в истории прогонов.'}
+              {canOperate
+                ? 'Запустите анализ дебиторки или выберите запуск в истории запусков.'
+                : 'Выберите запуск в истории запусков.'}
             </p>
           )}
           {runId !== null && run.isPending && <Skeleton className="h-64 w-full" />}
@@ -88,7 +90,7 @@ function RunResults({ run }: { run: Run }) {
       ) : (
         <Section title="Детализация по УПД" actions={toggle}>
           <p className="text-sm text-muted-foreground">
-            Список УПД прогона с фильтрами и путём каждого УПД через шаги. Откройте его здесь или нажмите на шаг или причину в
+            Список УПД запуска с фильтрами и путём каждого УПД через шаги. Откройте его здесь или нажмите на шаг или причину в
             воронке.
           </p>
         </Section>

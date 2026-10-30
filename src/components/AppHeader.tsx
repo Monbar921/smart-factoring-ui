@@ -4,15 +4,15 @@ import { Logo } from './Logo';
 import { UserMenu } from './UserMenu';
 
 const SECTIONS: { route: Route; href: string; title: string }[] = [
-  { route: 'process', href: '#/process', title: 'Прогон' },
+  { route: 'process', href: '#/process', title: 'Анализ дебиторки' },
   { route: 'crm', href: '#/crm', title: 'Эмулятор CRM' },
-  { route: 'history', href: '#/history', title: 'История прогонов' },
+  { route: 'history', href: '#/history', title: 'История запусков' },
 ];
 
 const TITLES: Record<Route, string> = {
   process: 'Экран процесса',
   crm: 'Эмулятор CRM',
-  history: 'История прогонов',
+  history: 'История запусков',
 };
 
 /** Шапка и вкладки разделов, как на макете экрана процесса (рис. 4 BRD) */

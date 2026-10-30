@@ -135,7 +135,7 @@ export function UpdTable({
         </TableBody>
       </Table>
       <div className="mt-2 flex items-center gap-2 text-xs">
-        <span className="text-muted-foreground italic">По клику на УПД открывается его путь через шаги прогона</span>
+        <span className="text-muted-foreground italic">По клику на УПД открывается его путь через шаги анализа</span>
         <Button
           className="ml-auto"
           variant="outline"

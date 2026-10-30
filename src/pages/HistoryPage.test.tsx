@@ -60,7 +60,7 @@ describe('HistoryPage', () => {
 
     const button = screen.getByRole('button', { name: 'Очистить все данные' });
     expect(button).toBeDisabled();
-    await userEvent.click(screen.getByLabelText('Понимаю, что данные, прогоны и решения будут удалены'));
+    await userEvent.click(screen.getByLabelText('Понимаю, что данные, запуски и решения будут удалены'));
     await userEvent.click(button);
 
     expect(await screen.findByText('Данные очищены.')).toBeInTheDocument();

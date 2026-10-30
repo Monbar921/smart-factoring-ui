@@ -40,7 +40,7 @@ describe('запуск прогона по выбранным клиентам',
     await userEvent.click(screen.getByRole('checkbox'));
     expect(screen.getByText('выбрано 2 из 3')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Запустить прогон' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Запустить анализ дебиторки' }));
     expect(calls.find((call) => call.method === 'POST')?.body).toMatchObject({ clientInns: ['0024194796', '7710000002'] });
   });
 
@@ -68,7 +68,7 @@ describe('запуск прогона по выбранным клиентам',
     await userEvent.selectOptions(screen.getByLabelText('Клиенты'), 'batches');
     await userEvent.click(screen.getByRole('checkbox', { name: 'Партия batch_01' }));
     expect(screen.getByText(/выбрано клиентов 2/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Запустить прогон' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Запустить анализ дебиторки' }));
     expect(calls.find((call) => call.method === 'POST')?.body).toMatchObject({ clientInns: ['0024194796', '0035326483'] });
 
     // «клиенты партии» - список, отфильтрованный по партии
@@ -100,17 +100,20 @@ describe('повторный прогон и гость (П4-1, П4-3)', () => {
       'POST /api/backend/runs': (body: unknown) =>
         (body as { force?: boolean }).force
           ? { runId: 12 }
-          : apiError(409, 'RUN_ALREADY_DONE', 'Эти данные уже прогнаны', { runId: 11, startedAt: '2026-10-30T09:15:00Z' }),
+          : apiError(409, 'RUN_ALREADY_DONE', 'Эти данные уже проанализированы', {
+              runId: 11,
+              startedAt: '2026-10-30T09:15:00Z',
+            }),
     });
     renderWithQuery(<LaunchCard run={undefined} canOperate onStarted={(id) => opened.push(id)} />);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Запустить прогон' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Эти данные уже прогнаны. Результат — прогон № 11 от');
-    await userEvent.click(screen.getByRole('button', { name: 'Открыть прогон № 11' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Запустить анализ дебиторки' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Эти данные уже проанализированы. Результат — запуск № 11 от');
+    await userEvent.click(screen.getByRole('button', { name: 'Открыть запуск № 11' }));
     expect(opened).toEqual([11]);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Прогнать заново' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Да, прогнать заново' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Проанализировать заново' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Да, проанализировать заново' }));
     expect(calls.filter((call) => call.method === 'POST').map((call) => (call.body as { force: boolean }).force)).toEqual([
       false,
       true,
@@ -122,9 +125,9 @@ describe('повторный прогон и гость (П4-1, П4-3)', () => {
     const calls = mockApi({ 'GET /api/backend/runs/defaults': defaults });
     renderWithQuery(<LaunchCard run={undefined} canOperate={false} viewOnly onStarted={() => {}} />);
 
-    const button = await screen.findByRole('button', { name: 'Запустить прогон' });
+    const button = await screen.findByRole('button', { name: 'Запустить анализ дебиторки' });
     expect(button).toBeDisabled();
-    expect(screen.getByRole('tooltip', { hidden: true })).toHaveTextContent('Запуск прогона доступен менеджеру');
+    expect(screen.getByRole('tooltip', { hidden: true })).toHaveTextContent('Запуск анализа дебиторки доступен менеджеру');
     expect(calls.some((call) => call.method === 'POST')).toBe(false);
   });
 });

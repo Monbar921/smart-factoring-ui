@@ -13,8 +13,8 @@ export function RunHistory({ onSelect }: { onSelect: (runId: number) => void }) 
   const runs = useRuns();
 
   return (
-    <Section title="История прогонов">
-      {runs.data?.items.length === 0 && <p className="text-sm text-muted-foreground">Прогонов ещё не было.</p>}
+    <Section title="История запусков">
+      {runs.data?.items.length === 0 && <p className="text-sm text-muted-foreground">Запусков ещё не было.</p>}
       {runs.data && runs.data.items.length > 0 && (
         <Table>
           <TableHeader className="bg-primary/10">
@@ -53,7 +53,7 @@ export function RunHistory({ onSelect }: { onSelect: (runId: number) => void }) 
           </TableBody>
         </Table>
       )}
-      <p className="mt-2 text-xs text-muted-foreground italic">По строке открывается прогон на вкладке «Прогон»</p>
+      <p className="mt-2 text-xs text-muted-foreground italic">По строке открывается запуск на вкладке «Анализ дебиторки»</p>
     </Section>
   );
 }
@@ -74,7 +74,7 @@ export function RunAttempts({ onSelect }: { onSelect: (runId: number) => void })
             <TableHead>Когда</TableHead>
             <TableHead>Кто</TableHead>
             <TableHead>Итог</TableHead>
-            <TableHead>Прогон</TableHead>
+            <TableHead>Запуск</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
