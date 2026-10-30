@@ -74,7 +74,7 @@ export function CrmPage({ viewOnly = false }: { viewOnly?: boolean }) {
         {managers.data?.length === 0 && <span className="text-sm text-muted-foreground">Менеджеров нет: запустите прогон.</span>}
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 min-[1400px]:grid-cols-[minmax(0,1fr)_24rem]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 min-[1400px]:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex min-w-0 flex-col gap-6">
           <Card className="gap-3 py-5">
             <CardHeader className="px-5">
@@ -86,10 +86,10 @@ export function CrmPage({ viewOnly = false }: { viewOnly?: boolean }) {
                 чем 40 000 ₽ при шансе 7% (приоритет 2 800).
               </CardDescription>
             </CardHeader>
-            <CardContent className="px-3">
+            <CardContent className="px-2">
               {/* поля ячеек уже обычных: 9 колонок помещаются рядом с карточкой без горизонтальной прокрутки */}
               <Table className="[&_td]:px-1.5 [&_th]:px-1.5">
-                <TableHeader>
+                <TableHeader className="text-xs">
                   {/* шапка в две строки, чтобы очередь помещалась без горизонтальной прокрутки */}
                   <TableRow>
                     <TableHead className="h-auto py-2 align-bottom leading-tight whitespace-nowrap">Клиент</TableHead>
@@ -162,12 +162,16 @@ export function CrmPage({ viewOnly = false }: { viewOnly?: boolean }) {
                         setClientId(item.client.id);
                       }}
                     >
-                      <TableCell className="max-w-32 truncate">{item.client.name}</TableCell>
+                      <TableCell className="max-w-24 truncate" title={item.client.name ?? undefined}>
+                        {item.client.name}
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium">
                           {item.updNumber} <span className="font-normal text-muted-foreground">от {date(item.updDate)}</span>
                         </div>
-                        <div className="max-w-44 truncate text-xs text-muted-foreground">{buyerTitle(item.buyer)}</div>
+                        <div className="max-w-36 truncate text-xs text-muted-foreground" title={buyerTitle(item.buyer)}>
+                          {buyerTitle(item.buyer)}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap tabular-nums">{money(item.ead)}</TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -184,7 +188,7 @@ export function CrmPage({ viewOnly = false }: { viewOnly?: boolean }) {
                           {money(item.rank)}
                         </Hint>
                       </TableCell>
-                      <TableCell className="w-28">
+                      <TableCell className="w-20">
                         <OfferFlags offer={item} />
                       </TableCell>
                     </TableRow>
@@ -325,7 +329,7 @@ function OfferCard({
     decision.mutate({ offerId: offer.offerId, action }, { onSuccess: () => onDone(), onSettled: () => setConfirming(null) });
 
   return (
-    <Card ref={card} tabIndex={-1} className="gap-4 py-5 outline-none" aria-label="Карточка предложения">
+    <Card ref={card} tabIndex={-1} className="scroll-mt-36 gap-4 py-5 outline-none" aria-label="Карточка предложения">
       <CardHeader className="px-5">
         <CardTitle className="text-base">
           {offer.client.name}: {updLabel(offer.updNumber)} от {date(offer.updDate)}

@@ -2,7 +2,7 @@ import { useRunAttempts, useRuns } from '@/api/backend';
 import { RunStatusBadge } from '@/components/StatusBadges';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { RUN_REJECT_REASONS, date, dateTime, duration, initiatorText, label, money } from '@/lib/format';
+import { RUN_REJECT_REASONS, date, dateTime, duration, label, money } from '@/lib/format';
 import { Section } from './Section';
 
 /**
@@ -36,7 +36,9 @@ export function RunHistory({ onSelect }: { onSelect: (runId: number) => void }) 
               <TableRow key={run.id} className="cursor-pointer" onClick={() => onSelect(run.id)}>
                 <TableCell className="font-medium">№ {run.id}</TableCell>
                 <TableCell>{dateTime(run.startedAt)}</TableCell>
-                <TableCell className="text-xs">{initiatorText(run.initiator, run.initiatorRole)}</TableCell>
+                <TableCell className="text-xs">
+                  <Initiator name={run.initiator} role={run.initiatorRole} />
+                </TableCell>
                 <TableCell>{date(run.calcDate)}</TableCell>
                 <TableCell>
                   <RunStatusBadge status={run.status} />
@@ -79,7 +81,9 @@ export function RunAttempts({ onSelect }: { onSelect: (runId: number) => void })
           {attempts.data.items.map((attempt) => (
             <TableRow key={attempt.id}>
               <TableCell>{dateTime(attempt.attemptedAt)}</TableCell>
-              <TableCell className="text-xs">{initiatorText(attempt.initiator, attempt.initiatorRole)}</TableCell>
+              <TableCell className="text-xs">
+                <Initiator name={attempt.initiator} role={attempt.initiatorRole} />
+              </TableCell>
               <TableCell className={attempt.outcome === 'REJECTED' ? 'text-destructive' : 'text-success'}>
                 {attempt.outcome === 'STARTED'
                   ? 'запущен'
@@ -97,5 +101,17 @@ export function RunAttempts({ onSelect }: { onSelect: (runId: number) => void })
         </TableBody>
       </Table>
     </Section>
+  );
+}
+
+/** Логин и роли в две строки: таблица истории помещается без горизонтальной прокрутки; без логина - запуск вызовом API */
+function Initiator({ name, role }: { name: string | null; role: string | null }) {
+  return (
+    <>
+      <div className="max-w-32 truncate" title={name ?? undefined}>
+        {name ?? 'API'}
+      </div>
+      {role && <div className="text-muted-foreground">{role}</div>}
+    </>
   );
 }

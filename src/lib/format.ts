@@ -263,9 +263,3 @@ export const RUN_REJECT_REASONS: Record<string, string> = {
   RUN_ALREADY_RUNNING: 'прогон уже идёт',
   VALIDATION_ERROR: 'неверный запрос',
 };
-
-/** «demo (гость)», «ivanov (operator)»; без логина - запуск вызовом API */
-export function initiatorText(initiator: string | null, role: string | null): string {
-  if (!initiator) return 'API';
-  return role ? `${initiator} (${role})` : initiator;
-}
