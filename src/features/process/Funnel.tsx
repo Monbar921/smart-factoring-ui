@@ -77,7 +77,7 @@ export function Funnel({
 
   return (
     <Section title="Воронка УПД">
-      {!enabled && <p className="text-sm text-muted-foreground">Воронка появится после завершения прогона.</p>}
+      {!enabled && <p className="text-sm text-muted-foreground">Воронка появится после завершения анализа.</p>}
       {enabled && funnel.isPending && <Skeleton className="h-48 w-full" />}
       {stages.length > 0 && (
         <div className="mb-4 flex flex-col gap-1 text-sm">

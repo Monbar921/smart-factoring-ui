@@ -121,7 +121,7 @@ function routes() {
           level: 'INFO',
           stepNo: null,
           eventCode: 'RUN_STARTED',
-          message: 'Прогон запущен',
+          message: 'Анализ дебиторки запущен',
           clientId: null,
           buyerId: null,
           updId: null,
@@ -144,7 +144,7 @@ describe('ProcessPage', () => {
     renderWithQuery(<ProcessPage />);
 
     // ЭП-1: строка состояния прогона под запуском
-    expect(await screen.findByText(/Прогон № 7 · выполнен/)).toBeInTheDocument();
+    expect(await screen.findByText(/Запуск № 7 · выполнен/)).toBeInTheDocument();
     // ЭП-2, ЭП-3: шаги со статусом и строкой-итогом, сбой - отдельной строкой
     expect(within(screen.getByTestId('step-1')).getByText(/6 клиентов/)).toBeInTheDocument();
     const step4 = screen.getByTestId('step-4');
@@ -164,7 +164,7 @@ describe('ProcessPage', () => {
     // справка про время внизу и журнал; тегов требований (ЭП-n) на экране нет
     expect(screen.getByLabelText('Справка про время')).toHaveTextContent('≈ 2,5 рабочего дня');
     expect(screen.queryByText(/ЭП-\d/)).not.toBeInTheDocument();
-    expect(screen.getByText(/запуск прогона № 7 \(operator\)/)).toBeInTheDocument();
+    expect(screen.getByText(/запуск анализа № 7 \(operator\)/)).toBeInTheDocument();
     expect(screen.getByText(/модель PD pd-stub-1/)).toBeInTheDocument();
   });
 
@@ -172,7 +172,7 @@ describe('ProcessPage', () => {
     const calls = mockApi(routes());
 
     renderWithQuery(<ProcessPage />);
-    const button = await screen.findByRole('button', { name: 'Запустить прогон' });
+    const button = await screen.findByRole('button', { name: 'Запустить анализ дебиторки' });
     await userEvent.click(button);
 
     const post = calls.find((call) => call.method === 'POST');
@@ -188,11 +188,13 @@ describe('ProcessPage', () => {
 
     renderWithQuery(<ProcessPage />);
     // П4-5: пока идёт прогон, кнопка неактивна, рядом - «Идёт прогон» со ссылкой на него
-    expect(await screen.findByRole('status')).toHaveTextContent('Идёт прогон № 8');
-    expect(screen.getByRole('button', { name: 'Запустить прогон' })).toBeDisabled();
+    expect(await screen.findByRole('status')).toHaveTextContent('Идёт анализ дебиторки: запуск № 8');
+    expect(screen.getByRole('button', { name: 'Запустить анализ дебиторки' })).toBeDisabled();
 
     runningRunId = null;
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Запустить прогон' })).toBeEnabled(), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Запустить анализ дебиторки' })).toBeEnabled(), {
+      timeout: 5000,
+    });
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });

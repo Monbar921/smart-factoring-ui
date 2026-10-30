@@ -155,10 +155,10 @@ export const FUNNEL_STAGES: Record<string, string> = {
 
 /** События журнала прогона по-русски (Р-59); неизвестный код показывается как есть */
 export const LOG_EVENTS: Record<string, string> = {
-  RUN_STARTED: 'Прогон запущен',
-  RUN_FINISHED: 'Прогон завершён',
-  RUN_INTERRUPTED: 'Прогон прерван',
-  RUN_TOO_LONG: 'Прогон дольше нормы',
+  RUN_STARTED: 'Анализ запущен',
+  RUN_FINISHED: 'Анализ завершён',
+  RUN_INTERRUPTED: 'Анализ прерван',
+  RUN_TOO_LONG: 'Анализ дольше нормы',
   STEP_FAILED: 'Сбой шага',
   NO_BUYER_DATA: 'Нет данных по покупателю',
   OVERDUE_NOTIFICATION: 'Уведомление о просрочке',
@@ -259,7 +259,7 @@ export function rankText(offer: Pick<Offer, 'income' | 'tr' | 'rank' | 'flags'>)
 /** Причины отказа в запуске прогона (П4-6) */
 export const RUN_REJECT_REASONS: Record<string, string> = {
   FORBIDDEN: 'нет прав',
-  RUN_ALREADY_DONE: 'эти данные уже прогнаны',
-  RUN_ALREADY_RUNNING: 'прогон уже идёт',
+  RUN_ALREADY_DONE: 'эти данные уже проанализированы',
+  RUN_ALREADY_RUNNING: 'анализ уже идёт',
   VALIDATION_ERROR: 'неверный запрос',
 };

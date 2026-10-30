@@ -52,7 +52,7 @@ export function ManualUploadCard({ locked = false }: { locked?: boolean }) {
         </CardTitle>
         <CardDescription>
           Выгрузка генератора, партия ML-команды (batch_NN) или весь их набор с index.json — формат определяется сам. Новые записи
-          добавляются, изменённые обновляются, ничего не удаляется. История прогонов и решения менеджеров сохраняются.
+          добавляются, изменённые обновляются, ничего не удаляется. История запусков и решения менеджеров сохраняются.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 px-5 text-sm">
@@ -191,13 +191,13 @@ export function ManualUploadResetCard({ locked = false }: { locked?: boolean }) 
           Очистка данных
         </CardTitle>
         <CardDescription>
-          Удаляет все загруженные данные, историю прогонов и решения менеджеров — чтобы начать с нуля.
+          Удаляет все загруженные данные, историю запусков и решения менеджеров — чтобы начать с нуля.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 px-5 text-sm">
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={confirmed} disabled={locked} onChange={(event) => setConfirmed(event.target.checked)} />
-          Понимаю, что данные, прогоны и решения будут удалены
+          Понимаю, что данные, запуски и решения будут удалены
         </label>
         <GuestLock locked={locked}>
           <Button

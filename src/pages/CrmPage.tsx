@@ -71,7 +71,9 @@ export function CrmPage({ viewOnly = false }: { viewOnly?: boolean }) {
             ))}
           </select>
         </label>
-        {managers.data?.length === 0 && <span className="text-sm text-muted-foreground">Менеджеров нет: запустите прогон.</span>}
+        {managers.data?.length === 0 && (
+          <span className="text-sm text-muted-foreground">Менеджеров нет: запустите анализ дебиторки.</span>
+        )}
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 min-[1400px]:grid-cols-[minmax(0,1fr)_22rem]">
@@ -235,7 +237,7 @@ function OfferFlags({ offer }: { offer: Offer }) {
   return (
     <div className="flex flex-wrap gap-1">
       {offer.flags.isNew && (
-        <Hint text="Предложение появилось в последнем прогоне.">
+        <Hint text="Предложение появилось при последнем запуске анализа.">
           <Badge className={cn(FLAG, 'bg-primary/10 text-primary')}>новое</Badge>
         </Hint>
       )}
@@ -532,7 +534,7 @@ function ClientCardView({ clientId, onSelectOffer }: { clientId: number; onSelec
       <CardHeader className="px-5">
         <CardTitle className="text-base">Карточка клиента: {data.client.name}</CardTitle>
         <CardDescription>
-          По прогону № {data.runId ?? '—'} на {date(data.calcDate)} · дата внешних данных {date(data.snapshotDate)}
+          По запуску № {data.runId ?? '—'} на {date(data.calcDate)} · дата внешних данных {date(data.snapshotDate)}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 px-5">
@@ -558,7 +560,7 @@ function ClientCardView({ clientId, onSelectOffer }: { clientId: number; onSelec
                 </span>
               </TableHead>
               <TableHead className="text-right">
-                <Hint align="end" text="Из 100 таких счетов столько оплатят позже срока больше порога задержки прогона.">
+                <Hint align="end" text="Из 100 таких счетов столько оплатят позже срока больше порога задержки.">
                   Задержка
                 </Hint>
               </TableHead>

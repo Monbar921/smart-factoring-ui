@@ -71,7 +71,7 @@ const STEP_METRICS: Record<number, [string, string, MetricKind][]> = {
 /** ЭП-2, ЭП-3: пять шагов прогона со статусом, временем и строкой-итогом, как на макете рис. 4 BRD */
 export function RunSteps({ run }: { run: Run }) {
   return (
-    <Section title="Ход прогона и результат шагов">
+    <Section title="Ход анализа и результат шагов">
       {run.errorMessage && <p className="mb-2 text-sm text-destructive">{run.errorMessage}</p>}
       <ol className="flex flex-col gap-2.5">
         {run.steps.map((step) => (
@@ -79,7 +79,7 @@ export function RunSteps({ run }: { run: Run }) {
         ))}
       </ol>
       <p className="mt-3 text-xs text-muted-foreground italic">
-        Решения по предложениям менеджер принимает после прогона, в эмуляторе CRM
+        Решения по предложениям менеджер принимает после анализа, в эмуляторе CRM
       </p>
     </Section>
   );

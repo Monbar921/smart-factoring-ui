@@ -33,8 +33,8 @@ describe('HomePage', () => {
 
     renderWithQuery(<HomePage />);
 
-    expect(await screen.findByText('Запуск прогона')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Прогон' })).toBeInTheDocument();
+    expect(await screen.findByText('Запуск анализа дебиторки')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Анализ дебиторки' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Эмулятор CRM' })).not.toBeInTheDocument();
   });
 
@@ -43,9 +43,9 @@ describe('HomePage', () => {
 
     renderWithQuery(<HomePage />);
 
-    expect(await screen.findByText('Выберите прогон в истории прогонов.')).toBeInTheDocument();
+    expect(await screen.findByText('Выберите запуск в истории запусков.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Эмулятор CRM' })).toBeInTheDocument();
-    expect(screen.queryByText('Запуск прогона')).not.toBeInTheDocument();
+    expect(screen.queryByText('Запуск анализа дебиторки')).not.toBeInTheDocument();
   });
 
   it('без ролей - сообщение «Нет доступа»', () => {
@@ -54,6 +54,6 @@ describe('HomePage', () => {
     renderWithQuery(<HomePage />);
 
     expect(screen.getByText('Нет доступа')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Прогон' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Анализ дебиторки' })).not.toBeInTheDocument();
   });
 });

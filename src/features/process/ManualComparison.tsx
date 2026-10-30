@@ -12,7 +12,7 @@ export function ManualComparison({ comparison }: { comparison: NonNullable<Run['
   const clients = plural(comparison.clients, ['клиенту', 'клиентам', 'клиентам']);
   return (
     <p className="rounded-md border bg-muted/40 px-4 py-2 text-[13px] text-muted-foreground" aria-label="Справка про время">
-      Справка: прогон по <b className="text-foreground">{clients}</b> занял{' '}
+      Справка: анализ дебиторки по <b className="text-foreground">{clients}</b> занял{' '}
       <b className="text-foreground">{duration(comparison.runDurationMs)}</b>. Вручную это{' '}
       <b className="text-foreground">≈ {workdays(comparison.manualMinutes)}</b> (
       {plural(comparison.clients, ['клиент', 'клиента', 'клиентов'])} × {minutesAsHours(perClient)}). Время ручной работы —

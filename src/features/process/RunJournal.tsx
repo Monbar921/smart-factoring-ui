@@ -18,9 +18,9 @@ export function RunJournal({ run }: { run: Run }) {
   const errors = useRunLog(run.id, 'ERROR', running);
 
   const timeline = [
-    `${time(run.startedAt)} запуск прогона № ${run.id} (${run.initiator})`,
+    `${time(run.startedAt)} запуск анализа № ${run.id} (${run.initiator})`,
     ...run.steps.filter((step) => step.finishedAt).map((step) => `${time(step.finishedAt)} шаг ${step.stepNo} готов`),
-    ...(run.finishedAt ? [`прогон ${run.status === 'STOPPED' ? 'остановлен' : 'выполнен'}`] : []),
+    ...(run.finishedAt ? [`анализ ${run.status === 'STOPPED' ? 'остановлен' : 'выполнен'}`] : []),
   ];
   const order = Object.keys(MODEL_TITLES);
   const versions = Object.entries(run.modelVersions ?? {})
@@ -35,7 +35,7 @@ export function RunJournal({ run }: { run: Run }) {
         обработки: {errors.data?.total ?? '—'}
       </p>
       <Button variant="link" size="sm" className="mt-1 h-auto px-0" onClick={() => setExpanded((value) => !value)}>
-        {expanded ? 'Скрыть журнал' : 'Весь журнал прогона'}
+        {expanded ? 'Скрыть журнал' : 'Весь журнал анализа'}
       </Button>
       {expanded && <RunLog runId={run.id} isRunning={running} />}
     </Section>
