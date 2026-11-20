@@ -72,7 +72,10 @@ export function CrmPage({ viewOnly = false }: { viewOnly?: boolean }) {
           </select>
         </label>
         {managers.data?.length === 0 && (
-          <span className="text-sm text-muted-foreground">Менеджеров нет: запустите анализ дебиторки.</span>
+          <span className="text-sm text-muted-foreground">
+            Нет доступных менеджеров: анализ дебиторки ещё не запускали или ваша учётная запись не закреплена за менеджером
+            клиентов.
+          </span>
         )}
       </div>
 
