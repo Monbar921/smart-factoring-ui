@@ -8,14 +8,23 @@
 #   KEYCLOAK_REALM      - realm стенда, например smart-factoring-test
 #   KEYCLOAK_CLIENT_ID  - публичный клиент UI в realm, по умолчанию smart-factoring-ui
 #   GUEST_LOGIN         - true: на странице входа кнопка «Запуск демо» (гостевой вход через gateway), по умолчанию false
-FROM nginxinc/nginx-unprivileged:1.29-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
+
+# исправления пакетов Alpine, вышедшие после сборки базового образа: без них сканер образа (Trivy, security-scan.yml)
+# находит уязвимости HIGH/CRITICAL с готовым исправлением (smart-factoring-backend docs/security.md, «Проверка безопасности»)
+USER root
+RUN apk upgrade --no-cache
+USER nginx
 
 ENV SERVER_PORT=8080 \
     KEYCLOAK_CLIENT_ID=smart-factoring-ui \
     # envsubst в шаблонах nginx - только своих переменных: $uri, $host и т.п. остаются переменными nginx
-    NGINX_ENVSUBST_FILTER="^(SERVER_PORT|GATEWAY_URI)$"
+    NGINX_ENVSUBST_FILTER="^(SERVER_PORT|GATEWAY_URI|KEYCLOAK_ORIGIN)$"
 
 COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+# заголовки безопасности (CSP и др.): в conf.d/snippets - nginx.conf подключает только conf.d/*.conf, сниппет - include
+COPY docker/nginx/security-headers.conf.template /etc/nginx/templates/snippets/security-headers.conf.template
+COPY --chmod=755 docker/entrypoint.d/15-keycloak-origin.envsh /docker-entrypoint.d/15-keycloak-origin.envsh
 COPY --chmod=755 docker/entrypoint.d/40-app-config.sh /docker-entrypoint.d/40-app-config.sh
 COPY dist/ /usr/share/nginx/html/
 
