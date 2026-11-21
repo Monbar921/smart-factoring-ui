@@ -3,6 +3,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { type Route, useHashRoute } from '@/lib/useHashRoute';
 import { CrmPage } from '@/pages/CrmPage';
+import { EconomicsPage } from '@/pages/EconomicsPage';
 import { HistoryPage } from '@/pages/HistoryPage';
 import { ProcessPage } from '@/pages/ProcessPage';
 
@@ -16,7 +17,7 @@ export function HomePage() {
   const roles = useRoles();
   const sections: Route[] = [];
   if (roles.operator || roles.manager || roles.viewer) {
-    sections.push('process');
+    sections.push('process', 'economics');
   }
   if (roles.manager || roles.viewer) {
     sections.push('crm');
@@ -33,6 +34,7 @@ export function HomePage() {
       <main className="mx-auto max-w-[96rem] px-4 py-5 sm:px-6">
         {route === 'crm' && <CrmPage viewOnly={roles.viewer} />}
         {route === 'process' && <ProcessPage canOperate={roles.operator} viewOnly={roles.viewer} runId={requested.runId} />}
+        {route === 'economics' && <EconomicsPage runId={requested.runId} />}
         {route === 'history' && <HistoryPage canOperate={roles.operator} viewOnly={roles.viewer} />}
         {route === undefined && (
           <Alert>

@@ -14,7 +14,14 @@ export function Portfolio({ run }: { run: Run }) {
   if (!metrics) return null;
   const deals = Number(metrics.offers ?? 0);
   return (
-    <Section title="Оценённый объём портфеля доверительных клиентов, которым можно продать выгодный продукт">
+    <Section
+      title="Оценённый объём портфеля доверительных клиентов, которым можно продать выгодный продукт"
+      actions={
+        <a className="shrink-0 text-sm text-primary underline-offset-4 hover:underline" href={`#/economics/${run.id}`}>
+          Экономический эффект →
+        </a>
+      }
+    >
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-3">
         <Figure value={deals.toLocaleString('ru-RU')} caption="Сделок можно заключить" />
         <Figure {...amount(Number(metrics.eadTotal ?? 0))} caption="Сумма портфеля, ₽" />
