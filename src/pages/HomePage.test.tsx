@@ -48,6 +48,17 @@ describe('HomePage', () => {
     expect(screen.queryByText('Запуск анализа дебиторки')).not.toBeInTheDocument();
   });
 
+  it('руководителю - эмулятор CRM по всем менеджерам и экран процесса только для просмотра', async () => {
+    accessToken = testToken('supervisor');
+    window.location.hash = '#/crm';
+
+    renderWithQuery(<HomePage />);
+
+    expect(await screen.findByRole('link', { name: 'Эмулятор CRM' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Анализ дебиторки' })).toBeInTheDocument();
+    expect(screen.queryByText('Нет доступа')).not.toBeInTheDocument();
+  });
+
   it('без ролей - сообщение «Нет доступа»', () => {
     accessToken = testToken('user');
 

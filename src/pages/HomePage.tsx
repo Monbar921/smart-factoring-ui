@@ -16,13 +16,14 @@ export function HomePage() {
   const requested = useHashRoute();
   const roles = useRoles();
   const sections: Route[] = [];
-  if (roles.operator || roles.manager || roles.viewer) {
+  const anyRole = roles.operator || roles.manager || roles.supervisor || roles.viewer;
+  if (anyRole) {
     sections.push('process', 'economics');
   }
-  if (roles.manager || roles.viewer) {
+  if (roles.manager || roles.supervisor || roles.viewer) {
     sections.push('crm');
   }
-  if (roles.operator || roles.manager || roles.viewer) {
+  if (anyRole) {
     sections.push('history');
   }
   // недоступный раздел из ссылки - открываем первый доступный
@@ -32,7 +33,7 @@ export function HomePage() {
     <div className="min-h-svh">
       <AppHeader route={route} sections={sections} />
       <main className="mx-auto max-w-[96rem] px-4 py-5 sm:px-6">
-        {route === 'crm' && <CrmPage viewOnly={roles.viewer} />}
+        {route === 'crm' && <CrmPage viewOnly={roles.viewer || (roles.supervisor && !roles.manager)} />}
         {route === 'process' && <ProcessPage canOperate={roles.operator} viewOnly={roles.viewer} runId={requested.runId} />}
         {route === 'economics' && <EconomicsPage runId={requested.runId} />}
         {route === 'history' && <HistoryPage canOperate={roles.operator} viewOnly={roles.viewer} />}
@@ -40,7 +41,7 @@ export function HomePage() {
           <Alert>
             <AlertTitle>Нет доступа</AlertTitle>
             <AlertDescription>
-              У вашей учётной записи нет ролей operator или manager. Обратитесь к администратору Keycloak.
+              У вашей учётной записи нет ролей operator, manager или supervisor. Обратитесь к администратору Keycloak.
             </AlertDescription>
           </Alert>
         )}
