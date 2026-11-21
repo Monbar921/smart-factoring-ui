@@ -211,8 +211,9 @@ export interface Manager {
 
 export interface Notification {
   id: number;
-  runId: number;
-  type: 'NEW_OFFER' | 'OFFER_CHANGED' | 'OVERDUE' | 'REMINDER' | 'RISK_SIGNAL';
+  /** null - уведомление вне прогона: событие ЕФРСБ по покупателю (Р-86) */
+  runId: number | null;
+  type: 'NEW_OFFER' | 'OFFER_CHANGED' | 'OFFER_REVOKED' | 'OVERDUE' | 'REMINDER' | 'RISK_SIGNAL';
   createdAt: string;
   client: Ref | null;
   buyer: Ref | null;
@@ -242,6 +243,32 @@ export interface CardUpd {
   noOfferReason: string | null;
   /** статус последнего предложения по УПД: QUEUED, TRANSFERRED, REJECTED; null - предложения не было */
   offerStatus: string | null;
+}
+
+/** Событие ЕФРСБ / ЕГРЮЛ по покупателю для имитации подписки на мониторинг контрагентов (Р-86) */
+export type EfrsbEventKind = 'INTENT' | 'OBSERVATION' | 'BANKRUPT' | 'LIQUIDATION';
+
+/** Покупатель с предложениями в очереди или переданными в факторинг */
+export interface RiskBuyer {
+  inn: string;
+  name: string | null;
+  queuedOffers: number;
+  queuedEad: number;
+  transferredOffers: number;
+}
+
+/** Реакция на событие: отзыв предложений, сигнал в риск, уведомления (Р-86) */
+export interface RiskReaction {
+  buyer: Ref;
+  event: string;
+  /** BANKRUPTCY, LIQUIDATION, EXCLUSION; null - не стоп-фактор */
+  stopFactor: string | null;
+  revokedOffers: number;
+  revokedEad: number;
+  transferredOffers: number;
+  notifiedManagers: number;
+  riskSignal: boolean;
+  message: string;
 }
 
 export type TextSource = 'LLM' | 'CACHE' | 'TEMPLATE' | 'FAILED';

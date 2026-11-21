@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   NOTIFICATION_TYPES,
   REASONS,
+  STOP_FACTORS,
   TEXT_SOURCES,
   buyerTitle,
   lowDataText,
@@ -495,7 +496,9 @@ function Notifications({ managerId }: { managerId: number | null }) {
           {notifications.data?.items.map((item) => (
             <li key={item.id} className="rounded-md border p-2">
               <div className="flex items-center gap-2">
-                {item.type === 'RISK_SIGNAL' && <ShieldAlert className="size-4 text-destructive" aria-hidden />}
+                {(item.type === 'RISK_SIGNAL' || item.type === 'OFFER_REVOKED') && (
+                  <ShieldAlert className="size-4 text-destructive" aria-hidden />
+                )}
                 <span className="font-medium">{label(NOTIFICATION_TYPES, item.type)}</span>
                 <span className="ml-auto text-xs text-muted-foreground">{dateTime(item.createdAt)}</span>
               </div>
@@ -509,7 +512,12 @@ function Notifications({ managerId }: { managerId: number | null }) {
                 {item.type === 'OFFER_CHANGED' && item.payload
                   ? ` · ${money(Number(item.payload.previousEad))} → ${money(Number(item.payload.ead))}`
                   : ''}
-                {item.type === 'RISK_SIGNAL' && item.buyer ? ` · покупатель ${item.buyer.name ?? item.buyer.inn}` : ''}
+                {(item.type === 'RISK_SIGNAL' || item.type === 'OFFER_REVOKED') && item.buyer
+                  ? ` · покупатель ${item.buyer.name ?? item.buyer.inn}`
+                  : ''}
+                {item.type === 'OFFER_REVOKED' && item.payload ? ` · ${money(Number(item.payload.ead))}` : ''}
+                {item.payload?.stopFactor ? ` · ${label(STOP_FACTORS, String(item.payload.stopFactor)).toLowerCase()}` : ''}
+                {item.payload?.event ? ` (${String(item.payload.event)})` : ''}
               </div>
             </li>
           ))}
@@ -523,6 +531,7 @@ function Notifications({ managerId }: { managerId: number | null }) {
 function noOffer(upd: CardUpd): string {
   if (upd.offerStatus === 'TRANSFERRED') return 'передан в факторинг';
   if (upd.offerStatus === 'REJECTED') return 'отклонён менеджером';
+  if (upd.offerStatus === 'REVOKED') return 'предложение отозвано: стоп-фактор покупателя';
   return label(REASONS, upd.noOfferReason);
 }
 

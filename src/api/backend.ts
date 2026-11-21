@@ -3,6 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { apiFetch, apiJson } from './client';
 import type {
   ClientCard,
+  EfrsbEventKind,
   EconomicEffect,
   FunnelStage,
   ImportResult,
@@ -11,6 +12,8 @@ import type {
   Notification,
   Offer,
   Page,
+  RiskBuyer,
+  RiskReaction,
   Run,
   RunDefaults,
   RunAttempt,
@@ -179,6 +182,27 @@ export function useManualUpload() {
       const response = await apiFetch(`${BASE}/manual-upload`, token!, { method: 'POST', body: form });
       return (await response.json()) as ImportResult;
     },
+    onSuccess: () => client.invalidateQueries(),
+  });
+}
+
+/** Покупатели с действующими предложениями - кому «прислать» событие ЕФРСБ (Р-86), только оператор */
+export function useRiskBuyers(enabled: boolean) {
+  const token = useToken();
+  return useQuery({
+    queryKey: ['risk-buyers'],
+    queryFn: () => apiJson<RiskBuyer[]>(`${BASE}/manual-upload/efrsb-event/buyers`, token!),
+    enabled: Boolean(token) && enabled,
+  });
+}
+
+/** Событие ЕФРСБ по покупателю: отзыв предложений, сигнал в риск, уведомления менеджерам (Р-86) */
+export function useEfrsbEvent() {
+  const token = useToken();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (event: { buyerInn: string; kind: EfrsbEventKind }) =>
+      apiJson<RiskReaction>(`${BASE}/manual-upload/efrsb-event`, token!, 'POST', event),
     onSuccess: () => client.invalidateQueries(),
   });
 }

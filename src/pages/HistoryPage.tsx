@@ -1,3 +1,4 @@
+import { EfrsbEventCard } from '@/features/process/EfrsbEvent';
 import { ManualUploadCard, ManualUploadResetCard } from '@/features/process/ManualUpload';
 import { RunAttempts, RunHistory } from '@/features/process/RunHistory';
 import { openRun } from '@/lib/useHashRoute';
@@ -16,6 +17,8 @@ export function HistoryPage({ canOperate, viewOnly = false }: { canOperate: bool
       {(canOperate || viewOnly) && (
         <aside className="flex flex-col gap-5">
           <ManualUploadCard locked={viewOnly} />
+          {/* путь /manual-upload/** gateway открывает только оператору - гостю форма не показывается (Р-86) */}
+          {canOperate && !viewOnly && <EfrsbEventCard />}
           <ManualUploadResetCard locked={viewOnly} />
         </aside>
       )}
