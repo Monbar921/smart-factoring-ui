@@ -266,3 +266,66 @@ export interface ImportIssue {
   key: string | null;
   message: string;
 }
+
+// ------------------------------------------------------------------ экономический эффект (Р-76)
+
+export interface EconomicRates {
+  /** ставка фондирования, доля */
+  fundingRate: number;
+  /** базовый TR, доля */
+  trBase: number;
+}
+
+export interface EconomicOffers {
+  offers: number;
+  /** выпали: доход при выбранной ставке ниже минимального */
+  belowMinIncome: number;
+  portfolioEad: number;
+  portfolioIncome: number;
+  expectedDeals: number;
+  expectedEad: number;
+  revenue: number;
+  funding: number;
+  expectedLoss: number;
+  opex: number;
+  income: number;
+  avgTermDays: number;
+}
+
+export interface EconomicScale {
+  code: 'DEMO' | 'CORE' | 'SEGMENT';
+  title: string;
+  clients: number;
+  expectedEad: number;
+  income: number;
+  runCost: number;
+  effect: number;
+  savedFte: number;
+  /** null - не окупается */
+  paybackMonths: number | null;
+}
+
+export interface EconomicEffect {
+  runId: number;
+  calcDate: string;
+  clients: number;
+  run: EconomicRates;
+  scenario: EconomicRates;
+  base: EconomicOffers;
+  result: EconomicOffers;
+  year: { turnover: number; expectedEad: number; income: number };
+  time: { savedHoursPerYear: number; savedFte: number; savedRub: number };
+  scales: EconomicScale[];
+  assumptions: {
+    coreClients: number;
+    segmentClients: number;
+    implementationCost: number;
+    fixedAnnualCost: number;
+    annualCostPerClient: number;
+    reviewsPerYear: number;
+    managerHourCost: number;
+    fteHoursPerYear: number;
+    manualMinutesPerClient: number;
+    systemMinutesPerClient: number;
+  };
+}

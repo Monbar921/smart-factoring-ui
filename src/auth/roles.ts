@@ -5,11 +5,13 @@ export interface Roles {
   operator: boolean;
   /** эмулятор CRM: очередь, карточка клиента, решения по предложениям */
   manager: boolean;
+  /** руководитель (Р-75): эмулятор CRM по всем менеджерам, только просмотр - решения принимает менеджер */
+  supervisor: boolean;
   /** гость «Запуск демо» (П4-1, П4-2): видит всё, но ничего не меняет и не запускает */
   viewer: boolean;
 }
 
-const GUEST: Roles = { operator: false, manager: false, viewer: true };
+const GUEST: Roles = { operator: false, manager: false, supervisor: false, viewer: true };
 
 /**
  * Роли realm Keycloak из access token (realm_access.roles).
@@ -17,7 +19,12 @@ const GUEST: Roles = { operator: false, manager: false, viewer: true };
  */
 export function rolesOf(accessToken: string | undefined): Roles {
   const roles = realmRoles(accessToken);
-  return { operator: roles.includes('operator'), manager: roles.includes('manager'), viewer: false };
+  return {
+    operator: roles.includes('operator'),
+    manager: roles.includes('manager'),
+    supervisor: roles.includes('supervisor'),
+    viewer: false,
+  };
 }
 
 /**
