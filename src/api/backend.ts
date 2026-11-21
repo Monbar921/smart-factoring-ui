@@ -9,6 +9,7 @@ import type {
   ImportResult,
   LogEntry,
   Manager,
+  Monitoring,
   Notification,
   Offer,
   Page,
@@ -116,6 +117,16 @@ export function useEconomics(runId: number | null, fundingRate: number | null, t
     queryFn: () => apiJson<EconomicEffect>(`${BASE}/runs/${runId}/economics${query({ fundingRate, trBase })}`, token!),
     enabled: Boolean(token) && runId !== null,
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Мониторинг моделей и LLM по запуску (Р-87) */
+export function useMonitoring(runId: number | null) {
+  const token = useToken();
+  return useQuery({
+    queryKey: ['runs', runId, 'monitoring'],
+    queryFn: () => apiJson<Monitoring>(`${BASE}/runs/${runId}/monitoring`, token!),
+    enabled: Boolean(token) && runId !== null,
   });
 }
 

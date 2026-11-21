@@ -245,6 +245,70 @@ export interface CardUpd {
   offerStatus: string | null;
 }
 
+/** Мониторинг моделей и LLM по запуску (Р-87) */
+export interface Monitoring {
+  runId: number;
+  status: RunStatus;
+  calcDate: string;
+  startedAt: string;
+  models: Record<string, string | null>;
+  pd: {
+    buyers: number;
+    /** MODEL - PD модели, BASE - базовый PD «мало данных» */
+    bySource: Record<string, number>;
+    stopFactors: number;
+    fromCache: number;
+    meanPd: number | null;
+    levels: Bucket[];
+    modelLevels: Bucket[];
+    psiReference: Psi | null;
+    psiPrevious: Psi | null;
+    reference: { sample: string; size: number | null; cuts: number[]; shares: Record<string, number> } | null;
+  };
+  delay: {
+    upds: number;
+    byStatus: Record<string, number>;
+    meanPDelay: number | null;
+    thresholdDays: number | null;
+    buckets: Bucket[];
+    psiPrevious: Psi | null;
+  };
+  llm: {
+    provider: string | null;
+    cards: number;
+    bySource: Record<string, number>;
+    answers: number;
+    rejected: number;
+    rejectedShare: number | null;
+    templateAfterFactCheck: number;
+  };
+  history: {
+    runId: number;
+    calcDate: string;
+    startedAt: string;
+    pdVersion: string | null;
+    buyers: number;
+    psiReference: number | null;
+    psiPrevious: number | null;
+    llmRejectedShare: number | null;
+  }[];
+}
+
+export interface Bucket {
+  label: string;
+  count: number;
+  share: number;
+}
+
+/** PSI: STABLE < 0,1, WATCH 0,1–0,25, SHIFT ≥ 0,25; n < 100 - ориентировочно */
+export interface Psi {
+  value: number;
+  status: 'STABLE' | 'WATCH' | 'SHIFT';
+  baseline: string;
+  baselineRunId: number | null;
+  n: number;
+}
+
 /** Событие ЕФРСБ / ЕГРЮЛ по покупателю для имитации подписки на мониторинг контрагентов (Р-86) */
 export type EfrsbEventKind = 'INTENT' | 'OBSERVATION' | 'BANKRUPT' | 'LIQUIDATION';
 
