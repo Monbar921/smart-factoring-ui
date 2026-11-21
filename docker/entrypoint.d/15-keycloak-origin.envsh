@@ -1,0 +1,6 @@
+#!/bin/sh
+# Подключается (source) entrypoint образа nginx до подстановки шаблонов (20-envsubst-on-templates.sh):
+# KEYCLOAK_ORIGIN - схема, хост и порт из KEYCLOAK_URL для Content-Security-Policy (nginx/security-headers.conf.template).
+# Путь отбрасывается: источник CSP с путём без «/» в конце разрешал бы только этот путь.
+KEYCLOAK_ORIGIN="$(printf '%s' "${KEYCLOAK_URL:-}" | sed -E 's|^([a-zA-Z][a-zA-Z0-9+.-]*://[^/?#]+).*|\1|')"
+export KEYCLOAK_ORIGIN

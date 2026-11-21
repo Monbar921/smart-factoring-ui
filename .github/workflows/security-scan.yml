@@ -1,0 +1,76 @@
+name: Security scan
+
+# Проверка безопасности перед выкатом (smart-factoring-backend: docs/security.md, «Проверка безопасности»; дорожная
+# карта, п. 1.1а-33). Каждый push и pull request и раз в неделю (новые уязвимости появляются и в неизменённом коде):
+#   sast  - статический анализ кода Semgrep (правила p/default: Java, TypeScript, Python, Dockerfile, workflow);
+#           красная проверка - находка уровня ERROR; WARNING - в отчёте, разобраны в docs/security.md
+#   image - образ UI (Trivy) и npm audit зависимостей, попадающих в сборку
+# Красная проверка - исправить (обновить зависимость или базовый образ) или принять с обоснованием: строка в
+# .trivyignore со сроком и запись в docs/security.md; nosemgrep в коде - только с причиной рядом.
+# Сканеры - образами Docker, закреплёнными дайджестом, без сторонних actions: плавающий тег чужого action могут подменить.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.65.0@sha256:a22415a38938a56c379387a8163fcb0ce38b10ace73e593475d3658d578b2436
+  SEMGREP_IMAGE: semgrep/semgrep:1.130.0@sha256:7674a72a8bd5beaa4591b728e5950c04c58b27b82803901f36e7f9d70b828906
+
+jobs:
+  sast:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Semgrep - отчёт
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/src" -w /src "$SEMGREP_IMAGE"             semgrep scan --config p/default --metrics=off --exclude-rule yaml.github-actions.security.github-actions-mutable-action-tag.github-actions-mutable-action-tag             --severity WARNING --severity ERROR --text | tee semgrep.txt
+          { echo '### Semgrep'; echo '```'; cat semgrep.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Semgrep - находки уровня ERROR
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/src" -w /src "$SEMGREP_IMAGE"             semgrep scan --config p/default --metrics=off --severity ERROR --error --quiet
+
+  image:
+    name: Dependencies and image (npm audit, Trivy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # зависимости, которые попадают в браузер; dev-зависимости (сборка, тесты) - в отчёте, но не валят проверку
+      - name: npm audit
+        run: |
+          npm audit --audit-level=high || true
+          npm audit --omit=dev --audit-level=high
+
+      - name: Build dist
+        run: npm run build
+
+      - name: Build image
+        run: docker build -t scan:latest .
+
+      - name: Trivy - образ (ОС и библиотеки)
+        run: |
+          mkdir -p "$HOME/.cache/trivy"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$GITHUB_WORKSPACE:/repo"             -v "$HOME/.cache/trivy:/root/.cache/trivy" -w /repo "$TRIVY_IMAGE"             image scan:latest --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore             --exit-code 1 --no-progress
+
+      - name: Trivy - Dockerfile
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$GITHUB_WORKSPACE:/repo"             -v "$HOME/.cache/trivy:/root/.cache/trivy" -w /repo "$TRIVY_IMAGE"             config . --severity HIGH,CRITICAL --exit-code 1

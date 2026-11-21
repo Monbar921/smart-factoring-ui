@@ -5,9 +5,7 @@ server {
     root /usr/share/nginx/html;
 
     server_tokens off;
-    add_header X-Content-Type-Options nosniff always;
-    add_header X-Frame-Options DENY always;
-    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    include /etc/nginx/conf.d/snippets/security-headers.conf;
 
     # healthcheck docker, в access log не пишется
     location = /healthz {
@@ -47,22 +45,20 @@ server {
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable" always;
-        add_header X-Content-Type-Options nosniff always;
+        include /etc/nginx/conf.d/snippets/security-headers.conf;
         try_files $uri =404;
     }
 
     # настройки стенда и точка входа - без кэша: после деплоя браузер сразу берёт новые
     location = /config.js {
         add_header Cache-Control "no-store" always;
-        add_header X-Content-Type-Options nosniff always;
+        include /etc/nginx/conf.d/snippets/security-headers.conf;
     }
 
     # SPA: любой путь, кроме файлов, отдаёт index.html
     location / {
         add_header Cache-Control "no-cache" always;
-        add_header X-Content-Type-Options nosniff always;
-        add_header X-Frame-Options DENY always;
-        add_header Referrer-Policy strict-origin-when-cross-origin always;
+        include /etc/nginx/conf.d/snippets/security-headers.conf;
         try_files $uri /index.html;
     }
 }

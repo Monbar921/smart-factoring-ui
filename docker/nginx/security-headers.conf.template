@@ -1,0 +1,13 @@
+# Заголовки безопасности UI (smart-factoring-backend docs/security.md, «Проверка безопасности перед запуском»: OWASP ZAP
+# baseline). Подключаются в server и в каждом location со своим add_header: в nginx add_header в location отменяет
+# заголовки уровня server. ${KEYCLOAK_ORIGIN} - схема, хост и порт KEYCLOAK_URL (docker/entrypoint.d/15-keycloak-origin.envsh):
+# oidc-client-ts ходит в Keycloak за токеном (connect-src), проверяет сессию во фрейме (frame-src), вход - переход на
+# страницу Keycloak (form-action - для выхода формой).
+# style-src 'unsafe-inline' - атрибуты style у компонентов (графики, ширины колонок); скрипты - только свои файлы.
+add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ${KEYCLOAK_ORIGIN}; frame-src ${KEYCLOAK_ORIGIN}; form-action 'self' ${KEYCLOAK_ORIGIN}; frame-ancestors 'none'; base-uri 'self'; object-src 'none'" always;
+add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()" always;
+add_header Cross-Origin-Opener-Policy same-origin always;
+add_header Cross-Origin-Resource-Policy same-origin always;
+add_header X-Content-Type-Options nosniff always;
+add_header X-Frame-Options DENY always;
+add_header Referrer-Policy strict-origin-when-cross-origin always;
