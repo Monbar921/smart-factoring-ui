@@ -24,6 +24,17 @@ export interface RunDefaults {
   runningRunId: number | null;
   /** партии ручной загрузки с ИНН их клиентов (Р-62); у выгрузки генератора партий нет */
   batches: { batchId: string; clientInns: string[] }[];
+  /** ночной анализ по расписанию (Р-85) */
+  schedule: RunSchedule | null;
+}
+
+/** Ночной анализ по расписанию (Р-85): cron Spring «сек мин час день месяц день недели» */
+export interface RunSchedule {
+  enabled: boolean;
+  cron: string;
+  zone: string;
+  /** следующий запуск; null - расписание выключено */
+  nextAt: string | null;
 }
 
 export interface RunStep {
@@ -51,7 +62,8 @@ export interface Run {
   status: RunStatus;
   calcDate: string;
   clientInns: string[] | null;
-  initiatorType: 'OPERATOR' | 'API';
+  /** SCHEDULE - ночной анализ по расписанию (Р-85) */
+  initiatorType: 'OPERATOR' | 'API' | 'SCHEDULE';
   initiator: string | null;
   startedAt: string;
   finishedAt: string | null;
