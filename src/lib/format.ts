@@ -175,6 +175,7 @@ export const LOG_EVENTS: Record<string, string> = {
   OFFER_TRANSFERRED: 'Передано в факторинг',
   OFFER_REJECTED: 'Отклонено менеджером',
   OFFER_REVOKED: 'Предложение отозвано',
+  EFRSB_EVENT: 'Событие ЕФРСБ',
 };
 
 /** Откуда тексты карточки предложения (Р-58) */
@@ -201,6 +202,7 @@ export const STOP_FACTORS: Record<string, string> = {
 export const NOTIFICATION_TYPES: Record<string, string> = {
   NEW_OFFER: 'Новое предложение',
   OFFER_CHANGED: 'Условия изменились',
+  OFFER_REVOKED: 'Предложение отозвано',
   OVERDUE: 'Просрочка оплаты',
   REMINDER: 'Напоминание',
   RISK_SIGNAL: 'Сигнал в риск',

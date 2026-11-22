@@ -24,6 +24,17 @@ export interface RunDefaults {
   runningRunId: number | null;
   /** партии ручной загрузки с ИНН их клиентов (Р-62); у выгрузки генератора партий нет */
   batches: { batchId: string; clientInns: string[] }[];
+  /** ночной анализ по расписанию (Р-85) */
+  schedule: RunSchedule | null;
+}
+
+/** Ночной анализ по расписанию (Р-85): cron Spring «сек мин час день месяц день недели» */
+export interface RunSchedule {
+  enabled: boolean;
+  cron: string;
+  zone: string;
+  /** следующий запуск; null - расписание выключено */
+  nextAt: string | null;
 }
 
 export interface RunStep {
@@ -51,7 +62,8 @@ export interface Run {
   status: RunStatus;
   calcDate: string;
   clientInns: string[] | null;
-  initiatorType: 'OPERATOR' | 'API';
+  /** SCHEDULE - ночной анализ по расписанию (Р-85) */
+  initiatorType: 'OPERATOR' | 'API' | 'SCHEDULE';
   initiator: string | null;
   startedAt: string;
   finishedAt: string | null;
@@ -199,8 +211,9 @@ export interface Manager {
 
 export interface Notification {
   id: number;
-  runId: number;
-  type: 'NEW_OFFER' | 'OFFER_CHANGED' | 'OVERDUE' | 'REMINDER' | 'RISK_SIGNAL';
+  /** null - уведомление вне прогона: событие ЕФРСБ по покупателю (Р-86) */
+  runId: number | null;
+  type: 'NEW_OFFER' | 'OFFER_CHANGED' | 'OFFER_REVOKED' | 'OVERDUE' | 'REMINDER' | 'RISK_SIGNAL';
   createdAt: string;
   client: Ref | null;
   buyer: Ref | null;
@@ -230,6 +243,96 @@ export interface CardUpd {
   noOfferReason: string | null;
   /** статус последнего предложения по УПД: QUEUED, TRANSFERRED, REJECTED; null - предложения не было */
   offerStatus: string | null;
+}
+
+/** Мониторинг моделей и LLM по запуску (Р-87) */
+export interface Monitoring {
+  runId: number;
+  status: RunStatus;
+  calcDate: string;
+  startedAt: string;
+  models: Record<string, string | null>;
+  pd: {
+    buyers: number;
+    /** MODEL - PD модели, BASE - базовый PD «мало данных» */
+    bySource: Record<string, number>;
+    stopFactors: number;
+    fromCache: number;
+    meanPd: number | null;
+    levels: Bucket[];
+    modelLevels: Bucket[];
+    psiReference: Psi | null;
+    psiPrevious: Psi | null;
+    reference: { sample: string; size: number | null; cuts: number[]; shares: Record<string, number> } | null;
+  };
+  delay: {
+    upds: number;
+    byStatus: Record<string, number>;
+    meanPDelay: number | null;
+    thresholdDays: number | null;
+    buckets: Bucket[];
+    psiPrevious: Psi | null;
+  };
+  llm: {
+    provider: string | null;
+    cards: number;
+    bySource: Record<string, number>;
+    answers: number;
+    rejected: number;
+    rejectedShare: number | null;
+    templateAfterFactCheck: number;
+  };
+  history: {
+    runId: number;
+    calcDate: string;
+    startedAt: string;
+    pdVersion: string | null;
+    buyers: number;
+    psiReference: number | null;
+    psiPrevious: number | null;
+    llmRejectedShare: number | null;
+  }[];
+}
+
+export interface Bucket {
+  label: string;
+  count: number;
+  share: number;
+}
+
+/** PSI: STABLE < 0,1, WATCH 0,1–0,25, SHIFT ≥ 0,25; n < 100 - ориентировочно */
+export interface Psi {
+  value: number;
+  status: 'STABLE' | 'WATCH' | 'SHIFT';
+  baseline: string;
+  baselineRunId: number | null;
+  n: number;
+}
+
+/** Событие ЕФРСБ / ЕГРЮЛ по покупателю для имитации подписки на мониторинг контрагентов (Р-86) */
+export type EfrsbEventKind = 'INTENT' | 'OBSERVATION' | 'BANKRUPT' | 'LIQUIDATION';
+
+/** Покупатель с предложениями в очереди или переданными в факторинг */
+export interface RiskBuyer {
+  inn: string;
+  name: string | null;
+  queuedOffers: number;
+  queuedEad: number;
+  transferredOffers: number;
+}
+
+/** Реакция на событие: отзыв предложений, сигнал в риск, уведомления (Р-86) */
+export interface RiskReaction {
+  buyer: Ref;
+  event: string;
+  /** BANKRUPTCY, LIQUIDATION, EXCLUSION; null - не стоп-фактор */
+  stopFactor: string | null;
+  revokedOffers: number;
+  revokedEad: number;
+  transferredOffers: number;
+  notifiedManagers: number;
+  riskSignal: boolean;
+  message: string;
 }
 
 export type TextSource = 'LLM' | 'CACHE' | 'TEMPLATE' | 'FAILED';
