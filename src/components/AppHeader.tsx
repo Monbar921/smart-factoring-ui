@@ -5,16 +5,12 @@ import { UserMenu } from './UserMenu';
 
 const SECTIONS: { route: Route; href: string; title: string }[] = [
   { route: 'process', href: '#/process', title: 'Анализ дебиторки' },
-  { route: 'economics', href: '#/economics', title: 'Экономический эффект' },
-  { route: 'monitoring', href: '#/monitoring', title: 'Мониторинг моделей' },
   { route: 'crm', href: '#/crm', title: 'Эмулятор CRM' },
   { route: 'history', href: '#/history', title: 'История запусков' },
 ];
 
 const TITLES: Record<Route, string> = {
   process: 'Экран процесса',
-  economics: 'Экономический эффект',
-  monitoring: 'Мониторинг моделей',
   crm: 'Эмулятор CRM',
   history: 'История запусков',
 };

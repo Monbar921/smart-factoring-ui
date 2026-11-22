@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useRunDefaults, useStartRun } from '@/api/backend';
 import { ApiError } from '@/api/client';
-import type { Run, RunSchedule } from '@/api/types';
+import type { Run } from '@/api/types';
 import { GuestLock } from '@/components/GuestLock';
 import { ErrorNote } from '@/components/StatusBadges';
 import { Button } from '@/components/ui/button';
@@ -111,12 +111,6 @@ export function LaunchCard({
               />
               <span />
               <span className="text-xs text-muted-foreground italic">по умолчанию — последняя дата данных</span>
-              {defaults.data?.schedule && (
-                <>
-                  <span />
-                  <ScheduleNote schedule={defaults.data.schedule} />
-                </>
-              )}
             </div>
             <div className="flex flex-col items-start gap-1">
               <GuestLock locked={viewOnly} text="Запуск анализа дебиторки доступен менеджеру">
@@ -291,24 +285,4 @@ export function LaunchCard({
 
 function currentStep(run: Run): number {
   return run.steps.find((step) => step.status === 'RUNNING' || step.status === 'PENDING')?.stepNo ?? run.steps.length;
-}
-
-/**
- * Ночной анализ по расписанию (Р-85): когда следующий. Ежедневный cron «0 М Ч * * *» - словами, другой - как есть.
- * На тех же данных, что прошлый запуск, ночной не запускается - отказ виден в «Попытках запуска».
- */
-function ScheduleNote({ schedule }: { schedule: RunSchedule }) {
-  if (!schedule.enabled) {
-    return <span className="text-xs text-muted-foreground italic">ночной анализ по расписанию выключен</span>;
-  }
-  const daily = /^0 (\d{1,2}) (\d{1,2}) \* \* \*$/.exec(schedule.cron.trim());
-  const when = daily
-    ? `каждый день в ${(daily[2] ?? '').padStart(2, '0')}:${(daily[1] ?? '').padStart(2, '0')}`
-    : `по расписанию «${schedule.cron}»`;
-  return (
-    <span className="text-xs text-muted-foreground italic" title={`Часовой пояс расписания: ${schedule.zone}`}>
-      ночной анализ {when}
-      {schedule.nextAt && <>, следующий — {dateTime(schedule.nextAt)}</>}; без новых данных не запускается
-    </span>
-  );
 }

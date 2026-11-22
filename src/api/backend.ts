@@ -4,12 +4,10 @@ import { apiFetch, apiJson } from './client';
 import type {
   ClientCard,
   EfrsbEventKind,
-  EconomicEffect,
   FunnelStage,
   ImportResult,
   LogEntry,
   Manager,
-  Monitoring,
   Notification,
   Offer,
   Page,
@@ -103,30 +101,6 @@ export function useStartRun() {
     mutationFn: (request: { clientInns: string[] | null; calcDate: string | null; force?: boolean }) =>
       apiJson<{ runId: number }>(`${BASE}/runs`, token!, 'POST', request),
     onSettled: () => client.invalidateQueries({ queryKey: ['runs'] }),
-  });
-}
-
-/**
- * Экономический эффект запуска (Р-76) при выбранных ставке фондирования и базовом TR; null - ставки запуска.
- * Пока считается новый вариант, на экране остаётся прежний (ползунки не мигают).
- */
-export function useEconomics(runId: number | null, fundingRate: number | null, trBase: number | null) {
-  const token = useToken();
-  return useQuery({
-    queryKey: ['runs', runId, 'economics', fundingRate, trBase],
-    queryFn: () => apiJson<EconomicEffect>(`${BASE}/runs/${runId}/economics${query({ fundingRate, trBase })}`, token!),
-    enabled: Boolean(token) && runId !== null,
-    placeholderData: keepPreviousData,
-  });
-}
-
-/** Мониторинг моделей и LLM по запуску (Р-87) */
-export function useMonitoring(runId: number | null) {
-  const token = useToken();
-  return useQuery({
-    queryKey: ['runs', runId, 'monitoring'],
-    queryFn: () => apiJson<Monitoring>(`${BASE}/runs/${runId}/monitoring`, token!),
-    enabled: Boolean(token) && runId !== null,
   });
 }
 
