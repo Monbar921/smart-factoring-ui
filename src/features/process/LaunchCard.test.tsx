@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { buyerTitle, dateTime, updLabel } from '@/lib/format';
+import { buyerTitle, updLabel } from '@/lib/format';
 import { apiError, mockApi } from '@/test/mockApi';
 import { renderWithQuery } from '@/test/render';
 import { LaunchCard } from './LaunchCard';
@@ -129,40 +129,5 @@ describe('повторный прогон и гость (П4-1, П4-3)', () => {
     expect(button).toBeDisabled();
     expect(screen.getByRole('tooltip', { hidden: true })).toHaveTextContent('Запуск анализа дебиторки доступен менеджеру');
     expect(calls.some((call) => call.method === 'POST')).toBe(false);
-  });
-});
-
-describe('ночной анализ по расписанию (Р-85)', () => {
-  it('форма запуска показывает, когда следующий', async () => {
-    mockApi({
-      'GET /api/backend/runs/defaults': {
-        dataDate: '2026-10-24',
-        snapshotDate: '2026-10-20',
-        clients: [],
-        runningRunId: null,
-        batches: [],
-        schedule: { enabled: true, cron: '0 0 3 * * *', zone: 'Europe/Moscow', nextAt: '2026-11-22T03:00:00+03:00' },
-      },
-    });
-    renderWithQuery(<LaunchCard run={undefined} canOperate onStarted={() => {}} />);
-
-    const note = await screen.findByText(/ночной анализ каждый день в 03:00/);
-    expect(note).toHaveTextContent(`следующий — ${dateTime('2026-11-22T03:00:00+03:00')}`);
-  });
-
-  it('выключенное расписание', async () => {
-    mockApi({
-      'GET /api/backend/runs/defaults': {
-        dataDate: '2026-10-24',
-        snapshotDate: '2026-10-20',
-        clients: [],
-        runningRunId: null,
-        batches: [],
-        schedule: { enabled: false, cron: '0 0 3 * * *', zone: 'Europe/Moscow', nextAt: null },
-      },
-    });
-    renderWithQuery(<LaunchCard run={undefined} canOperate onStarted={() => {}} />);
-
-    expect(await screen.findByText('ночной анализ по расписанию выключен')).toBeInTheDocument();
   });
 });

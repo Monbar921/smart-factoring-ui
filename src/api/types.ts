@@ -24,17 +24,6 @@ export interface RunDefaults {
   runningRunId: number | null;
   /** партии ручной загрузки с ИНН их клиентов (Р-62); у выгрузки генератора партий нет */
   batches: { batchId: string; clientInns: string[] }[];
-  /** ночной анализ по расписанию (Р-85) */
-  schedule: RunSchedule | null;
-}
-
-/** Ночной анализ по расписанию (Р-85): cron Spring «сек мин час день месяц день недели» */
-export interface RunSchedule {
-  enabled: boolean;
-  cron: string;
-  zone: string;
-  /** следующий запуск; null - расписание выключено */
-  nextAt: string | null;
 }
 
 export interface RunStep {
@@ -62,7 +51,7 @@ export interface Run {
   status: RunStatus;
   calcDate: string;
   clientInns: string[] | null;
-  /** SCHEDULE - ночной анализ по расписанию (Р-85) */
+  /** SCHEDULE - ночной анализ по расписанию (Р-85): сам анализ удалён, значение - у уже сохранённых запусков */
   initiatorType: 'OPERATOR' | 'API' | 'SCHEDULE';
   initiator: string | null;
   startedAt: string;
@@ -245,70 +234,6 @@ export interface CardUpd {
   offerStatus: string | null;
 }
 
-/** Мониторинг моделей и LLM по запуску (Р-87) */
-export interface Monitoring {
-  runId: number;
-  status: RunStatus;
-  calcDate: string;
-  startedAt: string;
-  models: Record<string, string | null>;
-  pd: {
-    buyers: number;
-    /** MODEL - PD модели, BASE - базовый PD «мало данных» */
-    bySource: Record<string, number>;
-    stopFactors: number;
-    fromCache: number;
-    meanPd: number | null;
-    levels: Bucket[];
-    modelLevels: Bucket[];
-    psiReference: Psi | null;
-    psiPrevious: Psi | null;
-    reference: { sample: string; size: number | null; cuts: number[]; shares: Record<string, number> } | null;
-  };
-  delay: {
-    upds: number;
-    byStatus: Record<string, number>;
-    meanPDelay: number | null;
-    thresholdDays: number | null;
-    buckets: Bucket[];
-    psiPrevious: Psi | null;
-  };
-  llm: {
-    provider: string | null;
-    cards: number;
-    bySource: Record<string, number>;
-    answers: number;
-    rejected: number;
-    rejectedShare: number | null;
-    templateAfterFactCheck: number;
-  };
-  history: {
-    runId: number;
-    calcDate: string;
-    startedAt: string;
-    pdVersion: string | null;
-    buyers: number;
-    psiReference: number | null;
-    psiPrevious: number | null;
-    llmRejectedShare: number | null;
-  }[];
-}
-
-export interface Bucket {
-  label: string;
-  count: number;
-  share: number;
-}
-
-/** PSI: STABLE < 0,1, WATCH 0,1–0,25, SHIFT ≥ 0,25; n < 100 - ориентировочно */
-export interface Psi {
-  value: number;
-  status: 'STABLE' | 'WATCH' | 'SHIFT';
-  baseline: string;
-  baselineRunId: number | null;
-  n: number;
-}
-
 /** Событие ЕФРСБ / ЕГРЮЛ по покупателю для имитации подписки на мониторинг контрагентов (Р-86) */
 export type EfrsbEventKind = 'INTENT' | 'OBSERVATION' | 'BANKRUPT' | 'LIQUIDATION';
 
@@ -368,67 +293,4 @@ export interface ImportIssue {
   line: number | null;
   key: string | null;
   message: string;
-}
-
-// ------------------------------------------------------------------ экономический эффект (Р-76)
-
-export interface EconomicRates {
-  /** ставка фондирования, доля */
-  fundingRate: number;
-  /** базовый TR, доля */
-  trBase: number;
-}
-
-export interface EconomicOffers {
-  offers: number;
-  /** выпали: доход при выбранной ставке ниже минимального */
-  belowMinIncome: number;
-  portfolioEad: number;
-  portfolioIncome: number;
-  expectedDeals: number;
-  expectedEad: number;
-  revenue: number;
-  funding: number;
-  expectedLoss: number;
-  opex: number;
-  income: number;
-  avgTermDays: number;
-}
-
-export interface EconomicScale {
-  code: 'DEMO' | 'CORE' | 'SEGMENT';
-  title: string;
-  clients: number;
-  expectedEad: number;
-  income: number;
-  runCost: number;
-  effect: number;
-  savedFte: number;
-  /** null - не окупается */
-  paybackMonths: number | null;
-}
-
-export interface EconomicEffect {
-  runId: number;
-  calcDate: string;
-  clients: number;
-  run: EconomicRates;
-  scenario: EconomicRates;
-  base: EconomicOffers;
-  result: EconomicOffers;
-  year: { turnover: number; expectedEad: number; income: number };
-  time: { savedHoursPerYear: number; savedFte: number; savedRub: number };
-  scales: EconomicScale[];
-  assumptions: {
-    coreClients: number;
-    segmentClients: number;
-    implementationCost: number;
-    fixedAnnualCost: number;
-    annualCostPerClient: number;
-    reviewsPerYear: number;
-    managerHourCost: number;
-    fteHoursPerYear: number;
-    manualMinutesPerClient: number;
-    systemMinutesPerClient: number;
-  };
 }
